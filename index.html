@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老婆的溫馨料理助手</title>
+    
+    <!-- =================【自訂 Web Icon 設定】================= -->
+    <!-- iOS (iPhone/iPad) 專用主畫面圖示 -->
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/gcCHBX8Q/Gemini-Generated-Image-kb91a1kb91a1kb91.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="https://i.postimg.cc/gcCHBX8Q/Gemini-Generated-Image-kb91a1kb91a1kb91.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://i.postimg.cc/gcCHBX8Q/Gemini-Generated-Image-kb91a1kb91a1kb91.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="https://i.postimg.cc/gcCHBX8Q/Gemini-Generated-Image-kb91a1kb91a1kb91.png">
+
+    <!-- Android / Chrome / 瀏覽器分頁 專用主畫面圖示 -->
+    <link rel="icon" type="image/png" sizes="192x192" href="https://i.postimg.cc/gcCHBX8Q/Gemini-Generated-Image-kb91a1kb91a1kb91.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="https://i.postimg.cc/gcCHBX8Q/Gemini-Generated-Image-kb91a1kb91a1kb91.png">
+
+    <!-- 行動裝置優化：網頁加到主畫面後的標題與全螢幕體驗 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="料理助手">
+    <!-- ======================================================== -->
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            light: '#fdf6f0',
+                            accent: '#d48c70',
+                            sage: '#8ba88f',
+                            dark: '#4a3b32',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #fdf6f0;
+            color: #4a3b32;
+        }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #d48c70; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+    <div id="app" class="max-w-md mx-auto px-4 pt-6">
+        <!-- Header -->
+        <header class="text-center mb-6">
+            <div class="inline-block p-1 bg-white rounded-full shadow-md mb-2 border border-brand-light overflow-hidden">
+                <!-- 頭部直接展示自訂的 Icon -->
+                <img src="https://i.postimg.cc/gcCHBX8Q/Gemini-Generated-Image-kb91a1kb91a1kb91.png" alt="Logo" class="w-16 h-16 object-cover rounded-full">
+            </div>
+            <h1 class="text-2xl font-bold text-brand-dark mt-1">老婆的溫馨料理助手</h1>
+            <p class="text-xs text-gray-500 mt-1">智慧雙菜搭配・星星健康紀錄</p>
+        </header>
+
+        <div v-if="!apiConfigured" class="text-center py-12">
+            <i class="fa-solid fa-spinner animate-spin text-brand-accent text-3xl"></i>
+            <p class="text-xs text-gray-400 mt-3">正在初始化智慧廚房...</p>
+        </div>
+
+        <div v-else>
+            <!-- Tabs -->
+            <div class="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 mb-6">
+                <button @click="currentTab = 'suggest'" 
+                        :class="currentTab === 'suggest' ? 'bg-brand-accent text-white shadow-sm' : 'text-gray-500 hover:text-brand-dark'"
+                        class="flex-1 text-center py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> 今日提案
+                </button>
+                <button @click="currentTab = 'record'" 
+                        :class="currentTab === 'record' ? 'bg-brand-accent text-white shadow-sm' : 'text-gray-500 hover:text-brand-dark'"
+                        class="flex-1 text-center py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> 紀錄晚餐
+                </button>
+                <button @click="currentTab = 'menu'" 
+                        :class="currentTab === 'menu' ? 'bg-brand-accent text-white shadow-sm' : 'text-gray-500 hover:text-brand-dark'"
+                        class="flex-1 text-center py-2.5 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-utensils"></i> 菜單庫
+                </button>
+            </div>
+
+            <!-- TAB 1: 點菜建議 -->
+            <div v-show="currentTab === 'suggest'" class="space-y-6">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <h2 class="text-lg font-bold mb-1 text-brand-dark">今天晚餐吃什麼？</h2>
+                    <p class="text-xs text-gray-400 mb-4">嚴選 9 種雙菜黃金組合，吃過的名單會自動降低重複率！</p>
+                    
+                    <button @click="generateRecommendation" 
+                            class="w-full bg-brand-sage text-white py-3 px-6 rounded-xl font-medium text-sm hover:bg-opacity-95 transition shadow-sm active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shuffle"></i> 智慧生成精簡配搭
+                    </button>
+                </div>
+
+                <!-- 智慧提案顯示 -->
+                <div v-if="suggestedMenu" class="bg-white p-5 rounded-2xl shadow-md border-2 border-brand-accent/30 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-brand-accent text-white text-[10px] px-3 py-1 rounded-bl-lg font-medium">
+                        {{ suggestedMenu.type }}
+                    </div>
+                    
+                    <h3 class="font-bold text-base text-brand-dark mb-4 flex items-center gap-2 border-b pb-2 border-gray-100">
+                        <span>🍽️</span> 精選菜單推薦
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-dot text-brand-accent"></i> 菜式 1：</span>
+                            <div class="text-right">
+                                <span class="font-semibold text-sm block">{{ suggestedMenu.菜式1 }}</span>
+                                <span v-if="suggestedMenu.菜式1好處" class="text-[10px] text-green-600 block bg-green-50 px-1.5 py-0.5 rounded mt-0.5 inline-block">💡 {{ suggestedMenu.菜式1好處 }}</span>
+                            </div>
+                        </div>
+                        <div v-if="suggestedMenu.菜式2" class="flex items-start justify-between gap-4 border-t pt-3 border-gray-100">
+                            <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-dot text-brand-sage"></i> 菜式 2：</span>
+                            <div class="text-right">
+                                <span class="font-semibold text-sm block">{{ suggestedMenu.菜式2 }}</span>
+                                <span v-if="suggestedMenu.菜式2好處" class="text-[10px] text-green-600 block bg-green-50 px-1.5 py-0.5 rounded mt-0.5 inline-block">💡 {{ suggestedMenu.菜式2好處 }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-dashed border-gray-200">
+                        <button @click="applySuggestionToRecord" 
+                                class="w-full bg-brand-accent text-white py-2 rounded-xl text-xs font-semibold hover:bg-opacity-95 active:scale-[0.98]">
+                            套用並填寫晚餐紀錄
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: 紀錄晚餐 -->
+            <div v-show="currentTab === 'record'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <h2 class="text-base font-bold mb-4 text-brand-dark flex items-center gap-2 border-b pb-2 border-gray-100">
+                    <i class="fa-solid fa-calendar-day text-brand-accent"></i> 紀錄晚餐與星級
+                </h2>
+                
+                <form @submit.prevent="submitRecord" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">用餐日期</label>
+                        <input type="date" v-model="recordForm.日期" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">菜式一</label>
+                        <input type="text" v-model="recordForm.菜式1" list="all-dishes" required placeholder="請選擇或自行輸入料理名稱" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">菜式二 (選填，特別特色菜請留空)</label>
+                        <input type="text" v-model="recordForm.菜式2" list="all-dishes" placeholder="請選擇或自行輸入搭配料理" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                    </div>
+
+                    <!-- 1-5 星級評分 -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">今晚美味評價：{{ recordForm.評價星級 }} 星</label>
+                        <div class="flex items-center gap-2 py-1 text-2xl">
+                            <i v-for="star in 5" :key="star" 
+                               @click="recordForm.評價星級 = star"
+                               :class="star <= recordForm.評價星級 ? 'fa-solid text-amber-400' : 'fa-regular text-gray-300'"
+                               class="fa-star cursor-pointer transition transform hover:scale-110"></i>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">心得 / 備註</label>
+                        <input type="text" v-model="recordForm.心得備註" placeholder="例: 老公超級稱讚，連吃兩大碗！" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                    </div>
+
+                    <button type="submit" :disabled="submitting" class="w-full bg-brand-accent text-white py-3 rounded-xl text-sm font-semibold hover:bg-opacity-95 active:scale-[0.98] transition shadow-sm flex items-center justify-center gap-2">
+                        <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
+                        <span v-else><i class="fa-solid fa-cloud-arrow-up"></i> 送出美味紀錄</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 3: 菜單庫與營養好處 -->
+            <div v-show="currentTab === 'menu'" class="space-y-6">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <h2 class="text-base font-bold mb-4 text-brand-dark flex items-center gap-2 border-b pb-2 border-gray-100">
+                        <i class="fa-solid fa-circle-plus text-brand-accent"></i> 新增菜色與健康好處
+                    </h2>
+                    
+                    <form @submit.prevent="submitNewDish" class="space-y-3.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">菜名</label>
+                            <input type="text" v-model="dishForm.菜名" required placeholder="例如: 蒜蓉炒菜心" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">分類</label>
+                                <select v-model="dishForm.分類" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                                    <option value="肉類">🥩 肉類</option>
+                                    <option value="蔬菜">🥦 蔬菜</option>
+                                    <option value="魚/海鮮">🐟 魚/海鮮</option>
+                                    <option value="湯品">🥣 湯品</option>
+                                    <option value="其它(如豆腐類)">🍳 其它(如豆腐類)</option>
+                                    <option value="特別特色菜">🍜 特別特色菜</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">難易度</label>
+                                <select v-model="dishForm.難易度" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                                    <option value="簡單">🟢 簡單</option>
+                                    <option value="中等">🟡 中等</option>
+                                    <option value="困難">🔴 困難</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 營養健康好處輸入欄 -->
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">🥦 營養健康好處</label>
+                            <input type="text" v-model="dishForm.營養健康好處" placeholder="例如: 高纖維有助消化、抗氧化" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">備註 / 煮法</label>
+                            <input type="text" v-model="dishForm.備註" placeholder="例如: 爆香蒜頭，大火快炒" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                        </div>
+
+                        <button type="submit" :disabled="submitting" class="w-full bg-brand-accent text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-opacity-95 active:scale-[0.98] transition shadow-sm flex items-center justify-center gap-2">
+                            <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
+                            <span v-else><i class="fa-solid fa-plus"></i> 新增此菜色</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 列表 -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-base font-bold text-brand-dark flex items-center gap-2">
+                            <i class="fa-solid fa-list text-brand-accent"></i> 菜單清單 ({{ dishes.length }})
+                        </h2>
+                        <button @click="fetchData" class="text-brand-accent text-xs hover:text-opacity-80"><i class="fa-solid fa-rotate"></i> 同步</button>
+                    </div>
+
+                    <div v-if="loading" class="text-center py-8">
+                        <i class="fa-solid fa-spinner animate-spin text-brand-accent text-2xl"></i>
+                    </div>
+
+                    <div v-else class="max-h-64 overflow-y-auto custom-scroll pr-1">
+                        <div v-if="dishes.length === 0" class="text-center py-6 text-xs text-gray-400">尚無菜色。</div>
+                        <ul v-else class="divide-y divide-gray-100 text-xs">
+                            <li v-for="(dish, idx) in dishes" :key="idx" class="py-3 flex flex-col justify-between gap-1">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <span class="font-bold text-brand-dark text-sm">{{ dish.菜名 }}</span>
+                                        <span class="ml-2 px-1.5 py-0.5 bg-brand-light text-gray-500 rounded text-[10px]">{{ dish.分類 }}</span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400">{{ dish.難易度 }}</span>
+                                </div>
+                                <div v-if="dish.營養健康好處" class="text-[10px] text-emerald-600 font-medium">✨ 好處: {{ dish.營養健康好處 }}</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HTML5 DataLists 用於輸入時自動完成提示 -->
+        <datalist id="all-dishes">
+            <option v-for="d in dishes" :key="d.菜名" :value="d.菜名"></option>
+        </datalist>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('suggest');
+                const apiUrl = ref('');
+                const apiConfigured = ref(false);
+                const loading = ref(false);
+                const submitting = ref(false);
+                const dishes = ref([]);
+                const recentHistory = ref([]); // 儲存近期晚餐紀錄歷史
+
+                const dishForm = ref({ 菜名: '', 分類: '肉類', 難易度: '簡單', 備註: '', 營養健康好處: '' });
+                const recordForm = ref({ 日期: new Date().toISOString().split('T')[0], 菜式1: '', 菜式2: '', 評價星級: 5, 心得備註: '' });
+                const suggestedMenu = ref(null);
+
+                onMounted(() => {
+                    // 🔥 請直接把您部署好的網址填入下方：
+                    apiUrl.value = "https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec"; 
+                    apiConfigured.value = true;
+                    fetchData();
+                });
+
+                const fetchData = async () => {
+                    if (!apiUrl.value || apiUrl.value.includes("你的_WEB_APP_網址")) return;
+                    loading.value = true;
+                    try {
+                        // 同時讀取菜單庫與晚餐歷史紀錄
+                        const [resDishes, resHistory] = await Promise.all([
+                            fetch(`${apiUrl.value}?sheet=菜單庫`),
+                            fetch(`${apiUrl.value}?sheet=每日晚餐紀錄`)
+                        ]);
+                        
+                        const dataDishes = await resDishes.json();
+                        const dataHistory = await resHistory.json();
+                        
+                        if (dataDishes.status === 'success') dishes.value = dataDishes.data;
+                        if (dataHistory.status === 'success') recentHistory.value = dataHistory.data;
+                    } catch (e) { console.error(e); }
+                    finally { loading.value = false; }
+                };
+
+                // 加權隨機篩選演算法 (扣除近期 7 天內已吃菜色的權重)
+                const getWeightedRandom = (filteredList) => {
+                    if (filteredList.length === 0) return null;
+                    
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    
+                    const eatenRecently = new Set();
+                    recentHistory.value.forEach(record => {
+                        const recordDate = new Date(record.日期);
+                        if (recordDate >= oneWeekAgo) {
+                            if (record.菜式1) eatenRecently.add(record.菜式1);
+                            if (record.菜式2) eatenRecently.add(record.菜式2);
+                        }
+                    });
+
+                    // 沒吃過相對權重 10，吃過降權為 1（降為 10% 出現率）
+                    const candidates = filteredList.map(dish => {
+                        const weight = eatenRecently.has(dish.菜名) ? 1 : 10;
+                        return { dish, weight };
+                    });
+
+                    const totalWeight = candidates.reduce((sum, item) => sum + item.weight, 0);
+                    let randomValue = Math.random() * totalWeight;
+
+                    for (const candidate of candidates) {
+                        randomValue -= candidate.weight;
+                        if (randomValue <= 0) {
+                            return candidate.dish;
+                        }
+                    }
+                    return candidates[0].dish;
+                };
+
+                // 智慧搭配演算法：嚴格執行指定的組合規則
+                const generateRecommendation = () => {
+                    if (dishes.value.length === 0) {
+                        alert('菜單庫目前是空的喔，請先去新增菜色！');
+                        return;
+                    }
+
+                    // 先整理不同類型的菜色
+                    const meats = dishes.value.filter(d => d.分類 === '肉類');
+                    const veggies = dishes.value.filter(d => d.分類 === '蔬菜');
+                    const seafood = dishes.value.filter(d => d.分類 === '魚/海鮮');
+                    const soups = dishes.value.filter(d => d.分類 === '湯品');
+                    const tofuOthers = dishes.value.filter(d => d.分類 === '其它(如豆腐類)');
+                    const specials = dishes.value.filter(d => d.分類 === '特別特色菜');
+
+                    // 定義可行的推薦策略與判定條件
+                    const strategies = [];
+
+                    // 0. 如果有特色菜，列為可行策略 (機率 20%)
+                    if (specials.length > 0) {
+                        strategies.push({ name: '特別特色菜', weight: 20 });
+                    }
+                    
+                    // 1 ~ 8 款常規配對組合的配對策略 (每組各佔 10% 機率權重)
+                    if (veggies.length > 0 && meats.length > 0) {
+                        strategies.push({ name: '1蔬菜 + 1肉類', weight: 10, listA: veggies, listB: meats, type: '🥦🥩 經典美味搭配' });
+                    }
+                    if (veggies.length > 0 && seafood.length > 0) {
+                        strategies.push({ name: '1蔬菜 + 1魚/海鮮', weight: 10, listA: veggies, listB: seafood, type: '🥦🐟 鮮美健康搭配' });
+                    }
+                    if (veggies.length > 0 && tofuOthers.length > 0) {
+                        strategies.push({ name: '1蔬菜 + 1其它', weight: 10, listA: veggies, listB: tofuOthers, type: '🥦🍳 輕盈營養搭配' });
+                    }
+                    if (meats.length > 0 && seafood.length > 0) {
+                        strategies.push({ name: '1肉 + 1魚/海鮮', weight: 10, listA: meats, listB: seafood, type: '🥩🐟 雙拼海陸盛宴' });
+                    }
+                    if (meats.length > 0 && tofuOthers.length > 0) {
+                        strategies.push({ name: '1肉 + 1其它', weight: 10, listA: meats, listB: tofuOthers, type: '🥩🍳 家常下飯組合' });
+                    }
+                    if (meats.length > 0 && soups.length > 0) {
+                        strategies.push({ name: '1肉 + 1湯品', weight: 10, listA: meats, listB: soups, type: '🥩🥣 暖心湯肉組合' });
+                    }
+                    if (soups.length > 0 && seafood.length > 0) {
+                        strategies.push({ name: '1湯品 + 1魚/海鮮', weight: 10, listA: soups, listB: seafood, type: '🥣🐟 滋補海鮮饗宴' });
+                    }
+                    if (soups.length > 0 && tofuOthers.length > 0) {
+                        strategies.push({ name: '1湯品 + 1其它', weight: 10, listA: soups, listB: tofuOthers, type: '🥣🍳 養生舒食配搭' });
+                    }
+
+                    // 如果沒有符合任何一條規則 (例如菜單庫材料不夠)，則進行兜底防崩潰機制
+                    if (strategies.length === 0) {
+                        const c1 = getWeightedRandom(dishes.value);
+                        let c2 = '';
+                        if (dishes.value.length > 1) {
+                            let possible = dishes.value.filter(d => d.菜名 !== c1.菜名);
+                            c2 = getWeightedRandom(possible).菜名;
+                        }
+                        suggestedMenu.value = {
+                            type: '🍱 隨選美味雙配',
+                            菜式1: c1.菜名,   菜式1好處: c1.營養健康好處 || '',
+                            菜式2: c2
+                        };
+                        return;
+                    }
+
+                    // 開始進行隨機抽取策略
+                    const totalStratWeight = strategies.reduce((sum, item) => sum + item.weight, 0);
+                    let randomStrat = Math.random() * totalStratWeight;
+                    let selectedStrat = strategies[0];
+
+                    for (const strat of strategies) {
+                        randomStrat -= strat.weight;
+                        if (randomStrat <= 0) {
+                            selectedStrat = strat;
+                            break;
+                        }
+                    }
+
+                    // 依照挑出的策略生成菜單
+                    if (selectedStrat.name === '特別特色菜') {
+                        const choice = getWeightedRandom(specials);
+                        suggestedMenu.value = {
+                            type: '🍜 特別特色菜',
+                            菜式1: choice.菜名,
+                            菜式1好處: choice.營養健康好處 || '',
+                            菜式2: '' // 單一特色料理，無第二道菜
+                        };
+                    } else {
+                        // 雙菜搭配：個別依據去權重隨機挑出 A 與 B
+                        const itemA = getWeightedRandom(selectedStrat.listA);
+                        const itemB = getWeightedRandom(selectedStrat.listB);
+                        suggestedMenu.value = {
+                            type: selectedStrat.type,
+                            菜式1: itemA.菜名,   菜式1好處: itemA.營養健康好處 || '',
+                            菜式2: itemB.菜名,   菜式2好處: itemB.營養健康好處 || ''
+                        };
+                    }
+                };
+
+                const applySuggestionToRecord = () => {
+                    if (!suggestedMenu.value) return;
+                    recordForm.value.菜式1 = suggestedMenu.value.菜式1;
+                    recordForm.value.菜式2 = suggestedMenu.value.菜式2;
+                    currentTab.value = 'record';
+                };
+
+                const submitNewDish = async () => {
+                    if (submitting.value) return;
+                    submitting.value = true;
+                    try {
+                        const payload = { action: 'addDish', data: { ...dishForm.value } };
+                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
+                        const result = await response.json();
+                        if (result.status === 'success') {
+                            alert('新菜色已成功加入菜單庫！');
+                            dishes.value.push({ ...dishForm.value });
+                            dishForm.value.菜名 = '';
+                            dishForm.value.備註 = '';
+                            dishForm.value.營養健康好處 = '';
+                        }
+                    } catch (e) { alert('連線失敗'); }
+                    finally { submitting.value = false; }
+                };
+
+                const submitRecord = async () => {
+                    if (submitting.value) return;
+                    submitting.value = true;
+                    try {
+                        const payload = { action: 'addRecord', data: { ...recordForm.value } };
+                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
+                        const result = await response.json();
+                        if (result.status === 'success') {
+                            alert(`晚餐紀錄成功！打分：${recordForm.value.評價星級}顆星 ⭐`);
+                            recentHistory.value.push({ ...recordForm.value });
+                            recordForm.value.菜式1 = '';
+                            recordForm.value.菜式2 = '';
+                            recordForm.value.心得備註 = '';
+                        }
+                    } catch (e) { alert('連線失敗'); }
+                    finally { submitting.value = false; }
+                };
+
+                return {
+                    currentTab, apiUrl, apiConfigured, loading, submitting, dishes,
+                    dishForm, recordForm, suggestedMenu, fetchData, generateRecommendation,
+                    applySuggestionToRecord, submitNewDish, submitRecord
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
