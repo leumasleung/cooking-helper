@@ -60,7 +60,6 @@
         <!-- Header -->
         <header class="text-center mb-6">
             <div class="inline-block p-1 bg-white rounded-full shadow-md mb-2 border border-brand-light overflow-hidden">
-                <!-- 頭部直接展示自訂的 Icon -->
                 <img src="./app-icon.png" alt="Logo" class="w-16 h-16 object-cover rounded-full">
             </div>
             <h1 class="text-2xl font-bold text-brand-dark mt-1">老婆的溫馨料理助手</h1>
@@ -115,18 +114,27 @@
                     </h3>
                     
                     <div class="space-y-4">
+                        <!-- 菜式 1 資訊 -->
                         <div class="flex items-start justify-between gap-4">
-                            <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-dot text-brand-accent"></i> 菜式 1：</span>
+                            <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap mt-1"><i class="fa-solid fa-circle-dot text-brand-accent"></i> 菜式 1：</span>
                             <div class="text-right">
                                 <span class="font-semibold text-sm block">{{ suggestedMenu.菜式1 }}</span>
-                                <span v-if="suggestedMenu.菜式1好處" class="text-[12px] text-green-600 block bg-green-50 px-1.5 py-0.5 rounded mt-0.5 inline-block">💡 {{ suggestedMenu.菜式1好處 }}</span>
+                                <div class="flex flex-col items-end gap-1 mt-1">
+                                    <span v-if="suggestedMenu.菜式1好處" class="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">💡 好處: {{ suggestedMenu.菜式1好處 }}</span>
+                                    <span v-if="suggestedMenu.菜式1備註" class="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">📝 備註: {{ suggestedMenu.菜式1備註 }}</span>
+                                </div>
                             </div>
                         </div>
+                        
+                        <!-- 菜式 2 資訊 -->
                         <div v-if="suggestedMenu.菜式2" class="flex items-start justify-between gap-4 border-t pt-3 border-gray-100">
-                            <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-circle-dot text-brand-sage"></i> 菜式 2：</span>
+                            <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap mt-1"><i class="fa-solid fa-circle-dot text-brand-sage"></i> 菜式 2：</span>
                             <div class="text-right">
                                 <span class="font-semibold text-sm block">{{ suggestedMenu.菜式2 }}</span>
-                                <span v-if="suggestedMenu.菜式2好處" class="text-[12px] text-green-600 block bg-green-50 px-1.5 py-0.5 rounded mt-0.5 inline-block">💡 {{ suggestedMenu.菜式2好處 }}</span>
+                                <div class="flex flex-col items-end gap-1 mt-1">
+                                    <span v-if="suggestedMenu.菜式2好處" class="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">💡 好處: {{ suggestedMenu.菜式2好處 }}</span>
+                                    <span v-if="suggestedMenu.菜式2備註" class="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">📝 備註: {{ suggestedMenu.菜式2備註 }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -240,11 +248,23 @@
 
                 <!-- 列表 -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-base font-bold text-brand-dark flex items-center gap-2">
-                            <i class="fa-solid fa-list text-brand-accent"></i> 菜單清單 ({{ dishes.length }})
-                        </h2>
-                        <button @click="fetchData" class="text-brand-accent text-xs hover:text-opacity-80"><i class="fa-solid fa-rotate"></i> 同步</button>
+                    <div class="mb-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-base font-bold text-brand-dark flex items-center gap-2">
+                                <i class="fa-solid fa-list text-brand-accent"></i> 菜單清單 ({{ filteredDishes.length }})
+                            </h2>
+                            <button @click="fetchData" class="text-brand-accent text-xs hover:text-opacity-80"><i class="fa-solid fa-rotate"></i> 同步</button>
+                        </div>
+                        
+                        <!-- 分類篩選 Filter 介面 -->
+                        <div class="flex gap-1 overflow-x-auto pb-2 custom-scroll">
+                            <button v-for="cat in categories" :key="cat.value"
+                                    @click="selectedCategory = cat.value"
+                                    :class="selectedCategory === cat.value ? 'bg-brand-accent text-white font-medium' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+                                    class="text-[11px] px-3 py-1 rounded-full whitespace-nowrap transition">
+                                {{ cat.label }}
+                            </button>
+                        </div>
                     </div>
 
                     <div v-if="loading" class="text-center py-8">
@@ -252,9 +272,9 @@
                     </div>
 
                     <div v-else class="max-h-64 overflow-y-auto custom-scroll pr-1">
-                        <div v-if="dishes.length === 0" class="text-center py-6 text-xs text-gray-400">尚無菜色。</div>
+                        <div v-if="filteredDishes.length === 0" class="text-center py-6 text-xs text-gray-400">目前分類下無菜色。</div>
                         <ul v-else class="divide-y divide-gray-100 text-xs">
-                            <li v-for="(dish, idx) in dishes" :key="idx" class="py-3 flex flex-col justify-between gap-1">
+                            <li v-for="(dish, idx) in filteredDishes" :key="idx" class="py-3 flex flex-col justify-between gap-1">
                                 <div class="flex justify-between items-center">
                                     <div>
                                         <span class="font-bold text-brand-dark text-sm">{{ dish.菜名 }}</span>
@@ -263,6 +283,7 @@
                                     <span class="text-[10px] text-gray-400">{{ dish.難易度 }}</span>
                                 </div>
                                 <div v-if="dish.營養健康好處" class="text-[10px] text-emerald-600 font-medium">✨ 好處: {{ dish.營養健康好處 }}</div>
+                                <div v-if="dish.備註" class="text-[10px] text-gray-500 italic">💡 備註: {{ dish.備註 }}</div>
                             </li>
                         </ul>
                     </div>
@@ -277,7 +298,7 @@
     </div>
 
     <script>
-        const { createApp, ref, onMounted } = Vue;
+        const { createApp, ref, computed, onMounted } = Vue;
 
         createApp({
             setup() {
@@ -288,13 +309,25 @@
                 const submitting = ref(false);
                 const dishes = ref([]);
                 const recentHistory = ref([]); // 儲存近期晚餐紀錄歷史
+                
+                // 篩選狀態
+                const selectedCategory = ref('全部');
+                const categories = [
+                    { label: '🔍 全部', value: '全部' },
+                    { label: '🥩 肉類', value: '肉類' },
+                    { label: '🥦 蔬菜', value: '蔬菜' },
+                    { label: '🐟 魚/海鮮', value: '魚/海鮮' },
+                    { label: '🥣 湯品', value: '湯品' },
+                    { label: '🍳 其它(豆腐類)', value: '其它(如豆腐類)' },
+                    { label: '🍜 特色菜', value: '特別特色菜' }
+                ];
 
                 const dishForm = ref({ 菜名: '', 分類: '肉類', 難易度: '簡單', 備註: '', 營養健康好處: '' });
                 const recordForm = ref({ 日期: new Date().toISOString().split('T')[0], 菜式1: '', 菜式2: '', 評價星級: 5, 心得備註: '' });
                 const suggestedMenu = ref(null);
 
                 onMounted(() => {
-                    // 🔥 請直接把您部署好的網址填入下方：
+                    // 套用您的專屬 Apps Script API 網址
                     apiUrl.value = "https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec"; 
                     apiConfigured.value = true;
                     fetchData();
@@ -304,7 +337,6 @@
                     if (!apiUrl.value || apiUrl.value.includes("你的_WEB_APP_網址")) return;
                     loading.value = true;
                     try {
-                        // 同時讀取菜單庫與晚餐歷史紀錄
                         const [resDishes, resHistory] = await Promise.all([
                             fetch(`${apiUrl.value}?sheet=菜單庫`),
                             fetch(`${apiUrl.value}?sheet=每日晚餐紀錄`)
@@ -318,6 +350,14 @@
                     } catch (e) { console.error(e); }
                     finally { loading.value = false; }
                 };
+
+                // 計算屬性：根據選取的分類過濾菜單清單
+                const filteredDishes = computed(() => {
+                    if (selectedCategory.value === '全部') {
+                        return dishes.value;
+                    }
+                    return dishes.value.filter(dish => dish.分類 === selectedCategory.value);
+                });
 
                 // 加權隨機篩選演算法 (扣除近期 7 天內已吃菜色的權重)
                 const getWeightedRandom = (filteredList) => {
@@ -353,14 +393,13 @@
                     return candidates[0].dish;
                 };
 
-                // 智慧搭配演算法：嚴格執行指定的組合規則
+                // 智慧搭配演算法：隨機選配並顯示「營養好處」與「備註」
                 const generateRecommendation = () => {
                     if (dishes.value.length === 0) {
                         alert('菜單庫目前是空的喔，請先去新增菜色！');
                         return;
                     }
 
-                    // 先整理不同類型的菜色
                     const meats = dishes.value.filter(d => d.分類 === '肉類');
                     const veggies = dishes.value.filter(d => d.分類 === '蔬菜');
                     const seafood = dishes.value.filter(d => d.分類 === '魚/海鮮');
@@ -368,15 +407,12 @@
                     const tofuOthers = dishes.value.filter(d => d.分類 === '其它(如豆腐類)');
                     const specials = dishes.value.filter(d => d.分類 === '特別特色菜');
 
-                    // 定義可行的推薦策略與判定條件
                     const strategies = [];
 
-                    // 0. 如果有特色菜，列為可行策略 (機率 20%)
                     if (specials.length > 0) {
                         strategies.push({ name: '特別特色菜', weight: 20 });
                     }
                     
-                    // 1 ~ 8 款常規配對組合的配對策略 (每組各佔 10% 機率權重)
                     if (veggies.length > 0 && meats.length > 0) {
                         strategies.push({ name: '1蔬菜 + 1肉類', weight: 10, listA: veggies, listB: meats, type: '🥦🥩 經典美味搭配' });
                     }
@@ -402,23 +438,25 @@
                         strategies.push({ name: '1湯品 + 1其它', weight: 10, listA: soups, listB: tofuOthers, type: '🥣🍳 養生舒食配搭' });
                     }
 
-                    // 如果沒有符合任何一條規則 (例如菜單庫材料不夠)，則進行兜底防崩潰機制
                     if (strategies.length === 0) {
                         const c1 = getWeightedRandom(dishes.value);
-                        let c2 = '';
+                        let c2 = null;
                         if (dishes.value.length > 1) {
                             let possible = dishes.value.filter(d => d.菜名 !== c1.菜名);
-                            c2 = getWeightedRandom(possible).菜名;
+                            c2 = getWeightedRandom(possible);
                         }
                         suggestedMenu.value = {
                             type: '🍱 隨選美味雙配',
-                            菜式1: c1.菜名,   菜式1好處: c1.營養健康好處 || '',
-                            菜式2: c2
+                            菜式1: c1.菜名,   
+                            菜式1好處: c1.營養健康好處 || '',
+                            菜式1備註: c1.備註 || '',
+                            菜式2: c2 ? c2.菜名 : '',
+                            菜式2好處: c2 ? (c2.營養健康好處 || '') : '',
+                            菜式2備註: c2 ? (c2.備註 || '') : ''
                         };
                         return;
                     }
 
-                    // 開始進行隨機抽取策略
                     const totalStratWeight = strategies.reduce((sum, item) => sum + item.weight, 0);
                     let randomStrat = Math.random() * totalStratWeight;
                     let selectedStrat = strategies[0];
@@ -431,23 +469,26 @@
                         }
                     }
 
-                    // 依照挑出的策略生成菜單
                     if (selectedStrat.name === '特別特色菜') {
                         const choice = getWeightedRandom(specials);
                         suggestedMenu.value = {
                             type: '🍜 特別特色菜',
                             菜式1: choice.菜名,
                             菜式1好處: choice.營養健康好處 || '',
-                            菜式2: '' // 單一特色料理，無第二道菜
+                            菜式1備註: choice.備註 || '',
+                            菜式2: '' 
                         };
                     } else {
-                        // 雙菜搭配：個別依據去權重隨機挑出 A 與 B
                         const itemA = getWeightedRandom(selectedStrat.listA);
                         const itemB = getWeightedRandom(selectedStrat.listB);
                         suggestedMenu.value = {
                             type: selectedStrat.type,
-                            菜式1: itemA.菜名,   菜式1好處: itemA.營養健康好處 || '',
-                            菜式2: itemB.菜名,   菜式2好處: itemB.營養健康好處 || ''
+                            菜式1: itemA.菜名,   
+                            菜式1好處: itemA.營養健康好處 || '',
+                            菜式1備註: itemA.備註 || '',
+                            菜式2: itemB.菜名,   
+                            菜式2好處: itemB.營養健康好處 || '',
+                            菜式2備註: itemB.備註 || ''
                         };
                     }
                 };
@@ -472,9 +513,15 @@
                             dishForm.value.菜名 = '';
                             dishForm.value.備註 = '';
                             dishForm.value.營養健康好處 = '';
+                        } else {
+                            alert('新增失敗：' + (result.message || '未知錯誤'));
                         }
-                    } catch (e) { alert('連線失敗'); }
-                    finally { submitting.value = false; }
+                    } catch (e) {
+                        console.error(e);
+                        alert('網路連線或 API 執行出錯！');
+                    } finally {
+                        submitting.value = false;
+                    }
                 };
 
                 const submitRecord = async () => {
@@ -485,20 +532,42 @@
                         const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
                         const result = await response.json();
                         if (result.status === 'success') {
-                            alert(`晚餐紀錄成功！打分：${recordForm.value.評價星級}顆星 ⭐`);
+                            alert('今晚的美味晚餐已成功紀錄！');
                             recentHistory.value.push({ ...recordForm.value });
                             recordForm.value.菜式1 = '';
                             recordForm.value.菜式2 = '';
                             recordForm.value.心得備註 = '';
+                            recordForm.value.評價星級 = 5;
+                            suggestedMenu.value = null; 
+                        } else {
+                            alert('紀錄失敗：' + (result.message || '未知錯誤'));
                         }
-                    } catch (e) { alert('連線失敗'); }
-                    finally { submitting.value = false; }
+                    } catch (e) {
+                        console.error(e);
+                        alert('網路連線或 API 執行出錯！');
+                    } finally {
+                        submitting.value = false;
+                    }
                 };
 
                 return {
-                    currentTab, apiUrl, apiConfigured, loading, submitting, dishes,
-                    dishForm, recordForm, suggestedMenu, fetchData, generateRecommendation,
-                    applySuggestionToRecord, submitNewDish, submitRecord
+                    currentTab,
+                    apiUrl,
+                    apiConfigured,
+                    loading,
+                    submitting,
+                    dishes,
+                    filteredDishes,
+                    categories,
+                    selectedCategory,
+                    dishForm,
+                    recordForm,
+                    suggestedMenu,
+                    fetchData,
+                    generateRecommendation,
+                    applySuggestionToRecord,
+                    submitNewDish,
+                    submitRecord
                 };
             }
         }).mount('#app');
