@@ -273,14 +273,17 @@
 
                     <div v-else class="max-h-64 overflow-y-auto custom-scroll pr-1">
                         <div v-if="filteredDishes.length === 0" class="text-center py-6 text-xs text-gray-400">目前分類下無菜色。</div>
+                        <!-- 點擊個別菜色即可開啟修改彈窗 -->
                         <ul v-else class="divide-y divide-gray-100 text-xs">
-                            <li v-for="(dish, idx) in filteredDishes" :key="idx" class="py-3 flex flex-col justify-between gap-1">
+                            <li v-for="(dish, idx) in filteredDishes" :key="idx" 
+                                @click="openEditModal(dish)"
+                                class="py-3 flex flex-col justify-between gap-1 cursor-pointer hover:bg-brand-light rounded-lg px-2 transition">
                                 <div class="flex justify-between items-center">
                                     <div>
                                         <span class="font-bold text-brand-dark text-sm">{{ dish.菜名 }}</span>
                                         <span class="ml-2 px-1.5 py-0.5 bg-brand-light text-gray-500 rounded text-[10px]">{{ dish.分類 }}</span>
                                     </div>
-                                    <span class="text-[10px] text-gray-400">{{ dish.難易度 }}</span>
+                                    <span class="text-[10px] text-gray-400">{{ dish.難易度 }} <i class="fa-solid fa-pen text-[9px] ml-1 text-gray-300"></i></span>
                                 </div>
                                 <div v-if="dish.營養健康好處" class="text-[10px] text-emerald-600 font-medium">✨ 好處: {{ dish.營養健康好處 }}</div>
                                 <div v-if="dish.備註" class="text-[10px] text-gray-500 italic">💡 備註: {{ dish.備註 }}</div>
@@ -290,6 +293,70 @@
                 </div>
             </div>
         </div>
+
+        <!-- =================【修改與檢視 菜色彈窗 Modal】================= -->
+        <div v-if="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
+                <button @click="closeModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+                
+                <h3 class="text-base font-bold text-brand-dark border-b pb-2 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-brand-accent"></i> 編輯/檢視 菜色資訊
+                </h3>
+
+                <form @submit.prevent="submitEditDish" class="space-y-4">
+                    <!-- 保存原始菜名作為修改對照 Key -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">菜名</label>
+                        <input type="text" v-model="editingDish.菜名" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">分類</label>
+                            <select v-model="editingDish.分類" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-brand-accent">
+                                <option value="肉類">🥩 肉類</option>
+                                <option value="蔬菜">🥦 蔬菜</option>
+                                <option value="魚/海鮮">🐟 魚/海鮮</option>
+                                <option value="湯品">🥣 湯品</option>
+                                <option value="其它(如豆腐類)">🍳 其它(豆腐)</option>
+                                <option value="特別特色菜">🍜 特色菜</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 mb-1">難易度</label>
+                            <select v-model="editingDish.難易度" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-brand-accent">
+                                <option value="簡單">🟢 簡單</option>
+                                <option value="中等">🟡 中等</option>
+                                <option value="困難">🔴 困難</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">🥦 營養健康好處</label>
+                        <input type="text" v-model="editingDish.營養健康好處" placeholder="例：高纖維有助消化" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">備註 / 煮法</label>
+                        <input type="text" v-model="editingDish.備註" placeholder="例：爆香蒜頭，大火快炒" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                    </div>
+
+                    <div class="flex gap-2 pt-2">
+                        <button type="button" @click="closeModal" class="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-gray-200 transition">
+                            取消
+                        </button>
+                        <button type="submit" :disabled="submitting" class="flex-1 bg-brand-accent text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-opacity-95 transition flex items-center justify-center gap-1.5">
+                            <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
+                            <span v-else><i class="fa-solid fa-floppy-disk"></i> 儲存修改</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- =============================================================== -->
 
         <!-- HTML5 DataLists 用於輸入時自動完成提示 -->
         <datalist id="all-dishes">
@@ -303,7 +370,8 @@
         createApp({
             setup() {
                 const currentTab = ref('suggest');
-                const apiUrl = ref('');
+                // 已更新為您最新的 Google Apps Script 網路應用程式 API 網址
+                const apiUrl = ref('https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec');
                 const apiConfigured = ref(false);
                 const loading = ref(false);
                 const submitting = ref(false);
@@ -326,15 +394,18 @@
                 const recordForm = ref({ 日期: new Date().toISOString().split('T')[0], 菜式1: '', 菜式2: '', 評價星級: 5, 心得備註: '' });
                 const suggestedMenu = ref(null);
 
+                // =================【修改與彈窗機制相關變數】=================
+                const showModal = ref(false);
+                const editingDish = ref({});
+                let originalDishName = ""; // 用於追蹤正在編輯的原始菜名
+
                 onMounted(() => {
-                    // 套用您的專屬 Apps Script API 網址
-                    apiUrl.value = "https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec"; 
                     apiConfigured.value = true;
                     fetchData();
                 });
 
                 const fetchData = async () => {
-                    if (!apiUrl.value || apiUrl.value.includes("你的_WEB_APP_網址")) return;
+                    if (!apiUrl.value) return;
                     loading.value = true;
                     try {
                         const [resDishes, resHistory] = await Promise.all([
@@ -358,6 +429,52 @@
                     }
                     return dishes.value.filter(dish => dish.分類 === selectedCategory.value);
                 });
+
+                // =================【修改彈窗控制方法】=================
+                const openEditModal = (dish) => {
+                    originalDishName = dish.菜名; // 記錄更名前的原始名稱
+                    editingDish.value = { ...dish }; // 複製一份，避免直接修改到當前列表
+                    showModal.value = true;
+                };
+
+                const closeModal = () => {
+                    showModal.value = false;
+                    editingDish.value = {};
+                    originalDishName = "";
+                };
+
+                // 送出修改至 API (GAS)
+                const submitEditDish = async () => {
+                    if (submitting.value) return;
+                    submitting.value = true;
+                    try {
+                        const payload = { 
+                            action: 'editDish', 
+                            originalName: originalDishName, // GAS 試算表可依此欄位搜尋比對並替換
+                            data: { ...editingDish.value } 
+                        };
+                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
+                        const result = await response.json();
+                        if (result.status === 'success') {
+                            alert('菜色修改成功！');
+                            
+                            // 更新本機 Vue 的狀態資料
+                            const idx = dishes.value.findIndex(d => d.菜名 === originalDishName);
+                            if (idx !== -1) {
+                                dishes.value[idx] = { ...editingDish.value };
+                            }
+                            closeModal();
+                        } else {
+                            alert('修改失敗：' + (result.message || '未知錯誤'));
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('網路連線或 API 執行出錯！');
+                    } finally {
+                        submitting.value = false;
+                    }
+                };
+                // ====================================================
 
                 // 加權隨機篩選演算法 (扣除近期 7 天內已吃菜色的權重)
                 const getWeightedRandom = (filteredList) => {
@@ -567,7 +684,14 @@
                     generateRecommendation,
                     applySuggestionToRecord,
                     submitNewDish,
-                    submitRecord
+                    submitRecord,
+                    
+                    // 彈窗相關
+                    showModal,
+                    editingDish,
+                    openEditModal,
+                    closeModal,
+                    submitEditDish
                 };
             }
         }).mount('#app');
