@@ -186,7 +186,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 mb-1">心得 / 備註</label>
-                        <input type="text" v-model="recordForm.心得備註" placeholder="例: 老公超級稱讚，連吃兩大碗！" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                        <input type="text" v-model="recordForm.心得備註" placeholder="例: 老公超級稱讚，連吃大碗！" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
                     </div>
 
                     <button type="submit" :disabled="submitting" class="w-full bg-brand-accent text-white py-3 rounded-xl text-sm font-semibold hover:bg-opacity-95 active:scale-[0.98] transition shadow-sm flex items-center justify-center gap-2">
@@ -386,7 +386,8 @@
                             </button>
                         </div>
                         
-                        <button type="button" @click.prevent="confirmDelete(originalDishName)" :disabled="submitting" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-rose-200/50">
+                        <!-- 修正點 1: 改為綁定對象 editingDish.菜名 且加上 .prevent。阻斷 Form 提交，確實傳送刪除目標 -->
+                        <button type="button" @click.prevent="confirmDelete(editingDish.菜名)" :disabled="submitting" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-rose-200/50">
                             <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
                             <span v-else><i class="fa-solid fa-trash-can"></i> 刪除此菜色</span>
                         </button>
@@ -432,7 +433,8 @@
 
                 const showModal = ref(false);
                 const editingDish = ref({});
-                let originalDishName = ""; 
+                // 修正點 2: 將 originalDishName 升級成 ref，並對外 return，讓 HTML 模版與 JS 的綁定一致
+                const originalDishName = ref(""); 
 
                 onMounted(() => {
                     apiConfigured.value = true;
@@ -477,7 +479,7 @@
                 });
 
                 const openEditModal = (dish) => {
-                    originalDishName = dish.菜名; 
+                    originalDishName.value = dish.菜名; 
                     editingDish.value = { ...dish }; 
                     showModal.value = true;
                 };
@@ -485,7 +487,7 @@
                 const closeModal = () => {
                     showModal.value = false;
                     editingDish.value = {};
-                    originalDishName = "";
+                    originalDishName.value = "";
                 };
 
                 const submitEditDish = async () => {
@@ -494,7 +496,7 @@
                     try {
                         const payload = { 
                             action: 'editDish', 
-                            originalName: originalDishName, 
+                            originalName: originalDishName.value, 
                             data: { ...editingDish.value } 
                         };
                         
@@ -510,7 +512,7 @@
                         const result = await response.json();
                         if (result.status === 'success') {
                             alert('菜色修改成功！');
-                            const idx = dishes.value.findIndex(d => d.菜名 === originalDishName);
+                            const idx = dishes.value.findIndex(d => d.菜名 === originalDishName.value);
                             if (idx !== -1) {
                                 dishes.value[idx] = { ...editingDish.value };
                             }
@@ -528,7 +530,7 @@
 
                 const confirmDelete = async (name) => {
                     if (!name) return;
-                    const check = confirm(`確定要永久刪除「${name}」這道菜色嗎？此動作將會從 Google 試算表中清除且無法復原。`);
+                    const check = confirm(`確定要永久刪除「${name}」這道菜色嗎？\n此動作將會從 Google 試算表中清除且無法復原。`);
                     if (!check) return;
 
                     submitting.value = true;
