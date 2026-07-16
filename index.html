@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>老婆的溫馨料理助手</title>
     
     <!-- =================【自訂 Web Icon 設定】================= -->
@@ -46,6 +46,7 @@
             background-color: #fdf6f0;
             color: #4a3b32;
             overscroll-behavior-y: none; 
+            -webkit-font-smoothing: antialiased;
         }
         .smooth-scroll {
             overflow-y: auto !important;
@@ -58,6 +59,10 @@
         .custom-scroll::-webkit-scrollbar-thumb { 
             background-color: #d48c70; 
             border-radius: 4px; 
+        }
+        /* 解決行動端按鈕點擊時有藍色高亮框與點擊穿透問題 */
+        button, select, input {
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 </head>
@@ -145,7 +150,7 @@
 
                     <div class="mt-5 pt-4 border-t border-dashed border-gray-200">
                         <button @click="applySuggestionToRecord" 
-                                class="w-full bg-brand-accent text-white py-2 rounded-xl text-xs font-semibold hover:bg-opacity-95 active:scale-[0.98]">
+                                class="w-full bg-brand-accent text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-opacity-95 active:scale-[0.98]">
                             套用並填寫晚餐紀錄
                         </button>
                     </div>
@@ -326,9 +331,13 @@
         </div>
 
         <!-- =================【編輯與檢視 菜色彈窗 Modal】================= -->
-        <div v-if="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
-                <button @click="closeModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <!-- 修正點: 新增 fixed 遮罩與防止點擊事件穿透 -->
+        <div v-if="showModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
+            <!-- 修正點: 設定最大高度限制 max-h-[90vh] 且允許垂直方向自適應滾動，避免手機上長內容把按鈕擠下螢幕 -->
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative overflow-y-auto max-h-[90vh] custom-scroll animate-in fade-in zoom-in-95 duration-150">
+                
+                <!-- 關閉按鈕，加大觸摸熱區 -->
+                <button @click="closeModal" type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
                 
@@ -374,20 +383,25 @@
                         <input type="text" v-model="editingDish.備註" placeholder="例：爆香蒜頭，大火快炒" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
                     </div>
 
-                    <!-- 按鈕群 -->
+                    <!-- 動作按鈕區 -->
                     <div class="flex flex-col gap-2 pt-2">
                         <div class="flex gap-2">
-                            <button type="button" @click="closeModal" class="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-gray-200 transition">
+                            <!-- 取消按鈕 -->
+                            <button type="button" @click="closeModal" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-xl text-xs font-semibold hover:bg-gray-200 transition active:scale-[0.97]">
                                 取消
                             </button>
-                            <button type="submit" :disabled="submitting" class="flex-1 bg-brand-accent text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-opacity-95 transition flex items-center justify-center gap-1.5">
+                            <!-- 儲存修改按鈕 -->
+                            <button type="submit" :disabled="submitting" class="flex-1 bg-brand-accent text-white py-3 rounded-xl text-xs font-semibold hover:bg-opacity-95 transition flex items-center justify-center gap-1.5 active:scale-[0.97]">
                                 <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
                                 <span v-else><i class="fa-solid fa-floppy-disk"></i> 儲存修改</span>
                             </button>
                         </div>
                         
-                        <!-- 修正點 1: 改為綁定對象 editingDish.菜名 且加上 .prevent。阻斷 Form 提交，確實傳送刪除目標 -->
-                        <button type="button" @click.prevent="confirmDelete(editingDish.菜名)" :disabled="submitting" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-rose-200/50">
+                        <!-- 刪除按鈕 (已修正手機觸控反應與事件穿透問題) -->
+                        <button type="button" 
+                                @click.prevent="confirmDelete(editingDish.菜名)" 
+                                :disabled="submitting" 
+                                class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-rose-200/50 active:scale-[0.97] pointer-events-auto cursor-pointer">
                             <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
                             <span v-else><i class="fa-solid fa-trash-can"></i> 刪除此菜色</span>
                         </button>
@@ -433,7 +447,6 @@
 
                 const showModal = ref(false);
                 const editingDish = ref({});
-                // 修正點 2: 將 originalDishName 升級成 ref，並對外 return，讓 HTML 模版與 JS 的綁定一致
                 const originalDishName = ref(""); 
 
                 onMounted(() => {
