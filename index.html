@@ -45,9 +45,22 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #fdf6f0;
             color: #4a3b32;
+            /* 防止整頁在手機上被彈性滾動干擾 */
+            overscroll-behavior-y: none; 
         }
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #d48c70; border-radius: 4px; }
+        /* 徹底解決手機端與 Web 端的滾動不流暢問題 */
+        .smooth-scroll {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important; /* 啟用 iOS 絲滑滾動 */
+            scrollbar-width: thin; /* Firefox 窄滾動條 */
+        }
+        .custom-scroll::-webkit-scrollbar { 
+            width: 5px; 
+        }
+        .custom-scroll::-webkit-scrollbar-thumb { 
+            background-color: #d48c70; 
+            border-radius: 4px; 
+        }
     </style>
 </head>
 <body class="min-h-screen pb-12">
@@ -261,8 +274,8 @@
                         <i class="fa-solid fa-spinner animate-spin text-brand-accent text-2xl"></i>
                     </div>
 
-                    <!-- 滾動區 -->
-                    <div v-else class="h-[520px] overflow-y-auto custom-scroll pr-1">
+                    <!-- 滾動區（已大幅改善滾動流暢性） -->
+                    <div v-else class="h-[480px] smooth-scroll custom-scroll pr-1">
                         <div v-if="filteredDishes.length === 0" class="text-center py-6 text-xs text-gray-400">目前分類下無菜色。</div>
                         
                         <ul v-else class="divide-y divide-gray-100 text-xs space-y-1">
@@ -274,7 +287,7 @@
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="font-bold text-brand-dark text-base">{{ dish.菜名 }}</span>
                                         
-                                        <!-- 分類標籤（附帶小 Icon） -->
+                                        <!-- 分類標籤 -->
                                         <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm flex items-center gap-1">
                                             <span>{{ getCategoryIcon(dish.分類) }}</span>
                                             <span>{{ dish.分類 }}</span>
@@ -286,7 +299,7 @@
                                         </span>
                                     </div>
 
-                                    <!-- 營養健康好處與備註標籤區 (比照今日提案下的圓角背景標籤樣式呈現) -->
+                                    <!-- 營養健康好處與備註標籤區 -->
                                     <div class="flex flex-col items-start gap-1">
                                         <!-- 好處標籤 -->
                                         <span v-if="dish.營養健康好處" class="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
@@ -376,7 +389,8 @@
                         </div>
                         
                         <button type="button" @click="confirmDelete(originalDishName)" :disabled="submitting" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-rose-200/50">
-                            <i class="fa-solid fa-trash-can"></i> 刪除此菜色
+                            <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
+                            <span v-else><i class="fa-solid fa-trash-can"></i> 刪除此菜色</span>
                         </button>
                     </div>
                 </form>
@@ -477,6 +491,7 @@
                     originalDishName = "";
                 };
 
+                // 優化後的編輯請求發送
                 const submitEditDish = async () => {
                     if (submitting.value) return;
                     submitting.value = true;
@@ -486,7 +501,17 @@
                             originalName: originalDishName, 
                             data: { ...editingDish.value } 
                         };
-                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
+                        
+                        // 使用 no-cors 或正常的 POST 視後端 GAS 設定而定，一般使用標準的 fetch POST 傳送 text 避免 CORS 預檢失敗
+                        const response = await fetch(apiUrl.value, { 
+                            method: 'POST', 
+                            mode: 'cors',
+                            headers: {
+                                'Content-Type': 'text/plain;charset=utf-8' // 繞過大部分 CORS 限制
+                            },
+                            body: JSON.stringify(payload) 
+                        });
+                        
                         const result = await response.json();
                         if (result.status === 'success') {
                             alert('菜色修改成功！');
@@ -496,16 +521,17 @@
                             }
                             closeModal();
                         } else {
-                            alert('修改失敗：' + (result.message || '未知錯誤'));
+                            alert('修改失敗：' + (result.message || '請確認後端 Google 試算表指令（editDish）是否正確對接。'));
                         }
                     } catch (e) {
                         console.error(e);
-                        alert('網路連線或 API 執行出錯！');
+                        alert('網路連線或 API 執行出錯，請確認 GAS 後端有正確佈署並開啟所有人可存取權限。');
                     } finally {
                         submitting.value = false;
                     }
                 };
 
+                // 優化後的刪除請求發送
                 const confirmDelete = async (name) => {
                     if (!name) return;
                     const check = confirm(`確定要永久刪除「${name}」這道菜色嗎？此動作將會從 Google 試算表中清除且無法復原。`);
@@ -517,21 +543,27 @@
                             action: 'deleteDish', 
                             dishName: name 
                         };
-                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
-                        const result = await response.json();
                         
+                        const response = await fetch(apiUrl.value, { 
+                            method: 'POST', 
+                            mode: 'cors',
+                            headers: {
+                                'Content-Type': 'text/plain;charset=utf-8' // 繞過大部分 CORS 限制
+                            },
+                            body: JSON.stringify(payload) 
+                        });
+                        
+                        const result = await response.json();
                         if (result.status === 'success') {
                             alert('已成功刪除！');
                             dishes.value = dishes.value.filter(d => d.菜名 !== name);
-                            if (showModal.value) {
-                                closeModal();
-                            }
+                            closeModal();
                         } else {
-                            alert('刪除失敗：' + (result.message || '未知錯誤'));
+                            alert('刪除失敗：' + (result.message || '請確認後端 GAS 代碼是否有對接「deleteDish」指令。'));
                         }
                     } catch (e) {
                         console.error(e);
-                        alert('刪除失敗，請稍後再試。');
+                        alert('刪除失敗，請檢查網路連線或 Google Apps Script 後端設定。');
                     } finally {
                         submitting.value = false;
                     }
@@ -662,7 +694,7 @@
                             菜式1好處: itemA.營養健康好處 || '',
                             菜式1備註: itemA.備註 || '',
                             菜式2: itemB.菜名,   
-                            菜式2好處: itemB.營養健康好處 || '',
+                            菜式2好處: itemB.營養健康好0.5 || '',
                             菜式2備註: itemB.備註 || ''
                         };
                     }
@@ -680,7 +712,12 @@
                     submitting.value = true;
                     try {
                         const payload = { action: 'addDish', data: { ...dishForm.value } };
-                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
+                        const response = await fetch(apiUrl.value, { 
+                            method: 'POST', 
+                            mode: 'cors',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload) 
+                        });
                         const result = await response.json();
                         if (result.status === 'success') {
                             alert('新菜色已成功加入菜單庫！');
@@ -704,7 +741,12 @@
                     submitting.value = true;
                     try {
                         const payload = { action: 'addRecord', data: { ...recordForm.value } };
-                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
+                        const response = await fetch(apiUrl.value, { 
+                            method: 'POST', 
+                            mode: 'cors',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload) 
+                        });
                         const result = await response.json();
                         if (result.status === 'success') {
                             alert('今晚的美味晚餐已成功紀錄！');
