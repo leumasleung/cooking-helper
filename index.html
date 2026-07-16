@@ -6,17 +6,12 @@
     <title>老婆的溫馨料理助手</title>
     
     <!-- =================【自訂 Web Icon 設定】================= -->
-    <!-- iOS (iPhone/iPad) 專用主畫面圖示 -->
     <link rel="apple-touch-icon" href="./app-icon.png">
     <link rel="apple-touch-icon" sizes="152x152" href="./app-icon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./app-icon.png">
     <link rel="apple-touch-icon" sizes="167x167" href="./app-icon.png">
-
-    <!-- Android / Chrome / 瀏覽器分頁 專用主畫面圖示 -->
     <link rel="icon" type="image/png" sizes="192x192" href="./app-icon.png">
     <link rel="icon" type="image/png" sizes="512x512" href="./app-icon.png">
-
-    <!-- 行動裝置優化：網頁加到主畫面後的標題與全螢幕體驗 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="料理助手">
@@ -114,7 +109,6 @@
                     </h3>
                     
                     <div class="space-y-4">
-                        <!-- 菜式 1 資訊 -->
                         <div class="flex items-start justify-between gap-4">
                             <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap mt-1"><i class="fa-solid fa-circle-dot text-brand-accent"></i> 菜式 1：</span>
                             <div class="text-right">
@@ -126,7 +120,6 @@
                             </div>
                         </div>
                         
-                        <!-- 菜式 2 資訊 -->
                         <div v-if="suggestedMenu.菜式2" class="flex items-start justify-between gap-4 border-t pt-3 border-gray-100">
                             <span class="text-xs text-gray-400 flex items-center gap-1.5 whitespace-nowrap mt-1"><i class="fa-solid fa-circle-dot text-brand-sage"></i> 菜式 2：</span>
                             <div class="text-right">
@@ -170,7 +163,6 @@
                         <input type="text" v-model="recordForm.菜式2" list="all-dishes" placeholder="請選擇或自行輸入搭配料理" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
                     </div>
 
-                    <!-- 1-5 星級評分 -->
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 mb-1">今晚美味評價：{{ recordForm.評價星級 }} 星</label>
                         <div class="flex items-center gap-2 py-1 text-2xl">
@@ -228,7 +220,6 @@
                             </div>
                         </div>
 
-                        <!-- 營養健康好處輸入欄 -->
                         <div>
                             <label class="block text-xs font-semibold text-gray-500 mb-1">🥦 營養健康好處</label>
                             <input type="text" v-model="dishForm.營養健康好處" placeholder="例如: 高纖維有助消化、抗氧化" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
@@ -256,7 +247,6 @@
                             <button @click="fetchData" class="text-brand-accent text-xs hover:text-opacity-80"><i class="fa-solid fa-rotate"></i> 同步</button>
                         </div>
                         
-                        <!-- 分類篩選 Filter 介面 -->
                         <div class="flex gap-1 overflow-x-auto pb-2 custom-scroll">
                             <button v-for="cat in categories" :key="cat.value"
                                     @click="selectedCategory = cat.value"
@@ -271,22 +261,53 @@
                         <i class="fa-solid fa-spinner animate-spin text-brand-accent text-2xl"></i>
                     </div>
 
-                    <div v-else class="max-h-64 overflow-y-auto custom-scroll pr-1">
+                    <!-- 滾動區高度調整為可完美容納約 8 個項目的高度 -->
+                    <div v-else class="h-[520px] overflow-y-auto custom-scroll pr-1">
                         <div v-if="filteredDishes.length === 0" class="text-center py-6 text-xs text-gray-400">目前分類下無菜色。</div>
-                        <!-- 點擊個別菜色即可開啟修改彈窗 -->
-                        <ul v-else class="divide-y divide-gray-100 text-xs">
+                        
+                        <ul v-else class="divide-y divide-gray-100 text-xs space-y-1">
                             <li v-for="(dish, idx) in filteredDishes" :key="idx" 
-                                @click="openEditModal(dish)"
-                                class="py-3 flex flex-col justify-between gap-1 cursor-pointer hover:bg-brand-light rounded-lg px-2 transition">
-                                <div class="flex justify-between items-center">
-                                    <div>
-                                        <span class="font-bold text-brand-dark text-sm">{{ dish.菜名 }}</span>
-                                        <span class="ml-2 px-1.5 py-0.5 bg-brand-light text-gray-500 rounded text-[10px]">{{ dish.分類 }}</span>
+                                class="py-3.5 flex items-center justify-between gap-3 hover:bg-brand-light rounded-xl px-3 transition group">
+                                
+                                <!-- 左半部資訊，點擊可開啟編輯 -->
+                                <div @click="openEditModal(dish)" class="flex-1 cursor-pointer space-y-1.5">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-bold text-brand-dark text-base">{{ dish.菜名 }}</span>
+                                        <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm">{{ dish.分類 }}</span>
                                     </div>
-                                    <span class="text-[10px] text-gray-400">{{ dish.難易度 }} <i class="fa-solid fa-pen text-[9px] ml-1 text-gray-300"></i></span>
+                                    <div v-if="dish.營養健康好處" class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                                        <span>✨</span> 好處: {{ dish.營養健康好處 }}
+                                    </div>
+                                    <div v-if="dish.備註" class="text-xs text-gray-500 italic flex items-center gap-1">
+                                        <span>💡</span> 備註: {{ dish.備註 }}
+                                    </div>
                                 </div>
-                                <div v-if="dish.營養健康好處" class="text-[10px] text-emerald-600 font-medium">✨ 好處: {{ dish.營養健康好處 }}</div>
-                                <div v-if="dish.備註" class="text-[10px] text-gray-500 italic">💡 備註: {{ dish.備註 }}</div>
+
+                                <!-- 右半部：放大顯示的標籤、編輯與刪除按鈕 -->
+                                <div class="flex items-center gap-3 shrink-0">
+                                    <!-- 放大難易度標籤 -->
+                                    <span :class="{
+                                        'bg-emerald-100 text-emerald-800 font-bold': dish.難易度 === '簡單',
+                                        'bg-amber-100 text-amber-800 font-bold': dish.難易度 === '中等',
+                                        'bg-rose-100 text-rose-800 font-bold': dish.難易度 === '困難'
+                                    }" class="px-2.5 py-1 rounded-full text-xs">
+                                        {{ dish.難易度 }}
+                                    </span>
+
+                                    <!-- 放大編輯按鈕 -->
+                                    <button @click="openEditModal(dish)" 
+                                            class="w-8 h-8 rounded-full bg-brand-accent/10 hover:bg-brand-accent text-brand-accent hover:text-white transition flex items-center justify-center" 
+                                            title="編輯/檢視">
+                                        <i class="fa-solid fa-pen text-sm"></i>
+                                    </button>
+
+                                    <!-- 刪除垃圾桶按鈕 -->
+                                    <button @click.stop="confirmDelete(dish.菜名)" 
+                                            class="w-8 h-8 rounded-full bg-rose-50 hover:bg-rose-500 text-rose-500 hover:text-white transition flex items-center justify-center" 
+                                            title="刪除菜色">
+                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                    </button>
+                                </div>
                             </li>
                         </ul>
                     </div>
@@ -294,7 +315,7 @@
             </div>
         </div>
 
-        <!-- =================【修改與檢視 菜色彈窗 Modal】================= -->
+        <!-- =================【編輯與檢視 菜色彈窗 Modal】================= -->
         <div v-if="showModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl relative animate-in fade-in zoom-in-95 duration-200">
                 <button @click="closeModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
@@ -306,7 +327,6 @@
                 </h3>
 
                 <form @submit.prevent="submitEditDish" class="space-y-4">
-                    <!-- 保存原始菜名作為修改對照 Key -->
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 mb-1">菜名</label>
                         <input type="text" v-model="editingDish.菜名" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
@@ -344,13 +364,20 @@
                         <input type="text" v-model="editingDish.備註" placeholder="例：爆香蒜頭，大火快炒" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
                     </div>
 
-                    <div class="flex gap-2 pt-2">
-                        <button type="button" @click="closeModal" class="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-gray-200 transition">
-                            取消
-                        </button>
-                        <button type="submit" :disabled="submitting" class="flex-1 bg-brand-accent text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-opacity-95 transition flex items-center justify-center gap-1.5">
-                            <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
-                            <span v-else><i class="fa-solid fa-floppy-disk"></i> 儲存修改</span>
+                    <!-- 按鈕群：刪除、取消與儲存 -->
+                    <div class="flex flex-col gap-2 pt-2">
+                        <div class="flex gap-2">
+                            <button type="button" @click="closeModal" class="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-gray-200 transition">
+                                取消
+                            </button>
+                            <button type="submit" :disabled="submitting" class="flex-1 bg-brand-accent text-white py-2.5 rounded-xl text-xs font-semibold hover:bg-opacity-95 transition flex items-center justify-center gap-1.5">
+                                <i v-if="submitting" class="fa-solid fa-spinner animate-spin"></i>
+                                <span v-else><i class="fa-solid fa-floppy-disk"></i> 儲存修改</span>
+                            </button>
+                        </div>
+                        
+                        <button type="button" @click="confirmDelete(originalDishName)" :disabled="submitting" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-rose-200/50">
+                            <i class="fa-solid fa-trash-can"></i> 刪除此菜色
                         </button>
                     </div>
                 </form>
@@ -358,7 +385,6 @@
         </div>
         <!-- =============================================================== -->
 
-        <!-- HTML5 DataLists 用於輸入時自動完成提示 -->
         <datalist id="all-dishes">
             <option v-for="d in dishes" :key="d.菜名" :value="d.菜名"></option>
         </datalist>
@@ -371,15 +397,14 @@
             setup() {
                 const currentTab = ref('suggest');
                 
-                // 【已為您更新為最新發布的部署網址】
+                // 網址已更新為最新的 API Web App URL
                 const apiUrl = ref('https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec');
                 const apiConfigured = ref(false);
                 const loading = ref(false);
                 const submitting = ref(false);
                 const dishes = ref([]);
-                const recentHistory = ref([]); // 儲存近期晚餐紀錄歷史
+                const recentHistory = ref([]); 
                 
-                // 篩選狀態
                 const selectedCategory = ref('全部');
                 const categories = [
                     { label: '🔍 全部', value: '全部' },
@@ -395,10 +420,9 @@
                 const recordForm = ref({ 日期: new Date().toISOString().split('T')[0], 菜式1: '', 菜式2: '', 評價星級: 5, 心得備註: '' });
                 const suggestedMenu = ref(null);
 
-                // =================【修改與彈窗機制相關變數】=================
                 const showModal = ref(false);
                 const editingDish = ref({});
-                let originalDishName = ""; // 用於追蹤正在編輯的原始菜名
+                let originalDishName = ""; 
 
                 onMounted(() => {
                     apiConfigured.value = true;
@@ -423,7 +447,6 @@
                     finally { loading.value = false; }
                 };
 
-                // 計算屬性：根據選取的分類過濾菜單清單
                 const filteredDishes = computed(() => {
                     if (selectedCategory.value === '全部') {
                         return dishes.value;
@@ -431,10 +454,9 @@
                     return dishes.value.filter(dish => dish.分類 === selectedCategory.value);
                 });
 
-                // =================【修改彈窗控制方法】=================
                 const openEditModal = (dish) => {
-                    originalDishName = dish.菜名; // 記錄更名前的原始名稱
-                    editingDish.value = { ...dish }; // 複製一份，避免直接修改到當前列表
+                    originalDishName = dish.菜名; 
+                    editingDish.value = { ...dish }; 
                     showModal.value = true;
                 };
 
@@ -444,22 +466,20 @@
                     originalDishName = "";
                 };
 
-                // 送出修改至 API (GAS)
+                // 送出修改動作
                 const submitEditDish = async () => {
                     if (submitting.value) return;
                     submitting.value = true;
                     try {
                         const payload = { 
                             action: 'editDish', 
-                            originalName: originalDishName, // GAS 試算表可依此欄位搜尋比對並替換
+                            originalName: originalDishName, 
                             data: { ...editingDish.value } 
                         };
                         const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
                         const result = await response.json();
                         if (result.status === 'success') {
                             alert('菜色修改成功！');
-                            
-                            // 更新本機 Vue 的狀態資料
                             const idx = dishes.value.findIndex(d => d.菜名 === originalDishName);
                             if (idx !== -1) {
                                 dishes.value[idx] = { ...editingDish.value };
@@ -475,9 +495,39 @@
                         submitting.value = false;
                     }
                 };
-                // ====================================================
 
-                // 加權隨機篩選演算法 (扣除近期 7 天內已吃菜色的權重)
+                // 刪除菜色
+                const confirmDelete = async (name) => {
+                    if (!name) return;
+                    const check = confirm(`確定要永久刪除「${name}」這道菜色嗎？此動作將會從 Google 試算表中清除且無法復原。`);
+                    if (!check) return;
+
+                    submitting.value = true;
+                    try {
+                        const payload = { 
+                            action: 'deleteDish', 
+                            dishName: name 
+                        };
+                        const response = await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify(payload) });
+                        const result = await response.json();
+                        
+                        if (result.status === 'success') {
+                            alert('已成功刪除！');
+                            dishes.value = dishes.value.filter(d => d.菜名 !== name);
+                            if (showModal.value) {
+                                closeModal();
+                            }
+                        } else {
+                            alert('刪除失敗：' + (result.message || '未知錯誤'));
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert('刪除失敗，請稍後再試。');
+                    } finally {
+                        submitting.value = false;
+                    }
+                };
+
                 const getWeightedRandom = (filteredList) => {
                     if (filteredList.length === 0) return null;
                     
@@ -493,7 +543,6 @@
                         }
                     });
 
-                    // 沒吃過相對權重 10，吃過降權為 1（降為 10% 出現率）
                     const candidates = filteredList.map(dish => {
                         const weight = eatenRecently.has(dish.菜名) ? 1 : 10;
                         return { dish, weight };
@@ -511,7 +560,6 @@
                     return candidates[0].dish;
                 };
 
-                // 智慧搭配演算法：隨機選配並顯示「營養好處」與「備註」
                 const generateRecommendation = () => {
                     if (dishes.value.length === 0) {
                         alert('菜單庫目前是空的喔，請先去新增菜色！');
@@ -687,12 +735,14 @@
                     submitNewDish,
                     submitRecord,
                     
-                    // 彈窗相關
+                    // 彈窗與刪除
                     showModal,
                     editingDish,
+                    originalDishName,
                     openEditModal,
                     closeModal,
-                    submitEditDish
+                    submitEditDish,
+                    confirmDelete
                 };
             }
         }).mount('#app');
