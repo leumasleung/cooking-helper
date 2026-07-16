@@ -273,29 +273,23 @@
                                 <div @click="openEditModal(dish)" class="flex-1 cursor-pointer space-y-1.5">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="font-bold text-brand-dark text-base">{{ dish.菜名 }}</span>
+                                        <!-- 分類標籤 -->
                                         <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm">{{ dish.分類 }}</span>
+                                        <!-- 難易度標籤（使用與分類相同的精緻樣式） -->
+                                        <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm">⚡ {{ dish.難易度 }}</span>
                                     </div>
                                     <!-- 有好處時顯示好處 -->
                                     <div v-if="dish.營養健康好處" class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
                                         <span>✨</span> 好處: {{ dish.營養健康好處 }}
                                     </div>
-                                    <!-- 有好處時，備註會緊隨在下方顯示（或者單獨有備註時也顯示） -->
+                                    <!-- 備註緊隨在好處下方（或單獨存在時也顯示） -->
                                     <div v-if="dish.備註" class="text-xs text-gray-500 italic flex items-center gap-1">
                                         <span>💡</span> 備註: {{ dish.備註 }}
                                     </div>
                                 </div>
 
-                                <!-- 右半部：放大顯示的難易度與編輯按鈕（移除垃圾桶按鈕） -->
+                                <!-- 右半部：精簡版面，僅保留放大編輯按鈕 -->
                                 <div class="flex items-center gap-3 shrink-0">
-                                    <!-- 放大難易度標籤 -->
-                                    <span :class="{
-                                        'bg-emerald-100 text-emerald-800 font-bold': dish.難易度 === '簡單',
-                                        'bg-amber-100 text-amber-800 font-bold': dish.難易度 === '中等',
-                                        'bg-rose-100 text-rose-800 font-bold': dish.難易度 === '困難'
-                                    }" class="px-2.5 py-1 rounded-full text-xs">
-                                        {{ dish.難易度 }}
-                                    </span>
-
                                     <!-- 放大編輯按鈕 -->
                                     <button @click="openEditModal(dish)" 
                                             class="w-8 h-8 rounded-full bg-brand-accent/10 hover:bg-brand-accent text-brand-accent hover:text-white transition flex items-center justify-center" 
@@ -371,7 +365,6 @@
                             </button>
                         </div>
                         
-                        <!-- 保留並強化這裡的刪除按鈕，具有點擊二次確認提示 -->
                         <button type="button" @click="confirmDelete(originalDishName)" :disabled="submitting" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-rose-200/50">
                             <i class="fa-solid fa-trash-can"></i> 刪除此菜色
                         </button>
@@ -393,7 +386,6 @@
             setup() {
                 const currentTab = ref('suggest');
                 
-                // 網址已更新為最新的 API Web App URL
                 const apiUrl = ref('https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec');
                 const apiConfigured = ref(false);
                 const loading = ref(false);
@@ -462,7 +454,6 @@
                     originalDishName = "";
                 };
 
-                // 送出修改動作
                 const submitEditDish = async () => {
                     if (submitting.value) return;
                     submitting.value = true;
@@ -492,7 +483,6 @@
                     }
                 };
 
-                // 刪除菜色
                 const confirmDelete = async (name) => {
                     if (!name) return;
                     const check = confirm(`確定要永久刪除「${name}」這道菜色嗎？此動作將會從 Google 試算表中清除且無法復原。`);
@@ -532,7 +522,7 @@
                     
                     const eatenRecently = new Set();
                     recentHistory.value.forEach(record => {
-                        const recordDate = new Date(record.日期);
+                        const recordDate = new Date(record.官方日期 || record.日期);
                         if (recordDate >= oneWeekAgo) {
                             if (record.菜式1) eatenRecently.add(record.菜式1);
                             if (record.菜式2) eatenRecently.add(record.菜式2);
@@ -731,7 +721,6 @@
                     submitNewDish,
                     submitRecord,
                     
-                    // 彈窗與刪除
                     showModal,
                     editingDish,
                     originalDishName,
