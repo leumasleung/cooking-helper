@@ -261,7 +261,7 @@
                         <i class="fa-solid fa-spinner animate-spin text-brand-accent text-2xl"></i>
                     </div>
 
-                    <!-- 滾動區高度調整為可完美容納約 8 個項目的高度 -->
+                    <!-- 滾動區高度調整 -->
                     <div v-else class="h-[520px] overflow-y-auto custom-scroll pr-1">
                         <div v-if="filteredDishes.length === 0" class="text-center py-6 text-xs text-gray-400">目前分類下無菜色。</div>
                         
@@ -273,24 +273,30 @@
                                 <div @click="openEditModal(dish)" class="flex-1 cursor-pointer space-y-1.5">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="font-bold text-brand-dark text-base">{{ dish.菜名 }}</span>
-                                        <!-- 分類標籤 -->
-                                        <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm">{{ dish.分類 }}</span>
-                                        <!-- 難易度標籤（使用與分類相同的精緻樣式） -->
-                                        <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm">⚡ {{ dish.難易度 }}</span>
+                                        
+                                        <!-- 分類標籤（附帶小 Icon） -->
+                                        <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm flex items-center gap-1">
+                                            <span>{{ getCategoryIcon(dish.分類) }}</span>
+                                            <span>{{ dish.分類 }}</span>
+                                        </span>
+                                        
+                                        <!-- 難易度標籤 -->
+                                        <span class="px-2 py-0.5 bg-white text-gray-500 rounded-md text-[10px] border border-gray-100 shadow-sm">
+                                            ⚡ {{ dish.難易度 }}
+                                        </span>
                                     </div>
                                     <!-- 有好處時顯示好處 -->
                                     <div v-if="dish.營養健康好處" class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
                                         <span>✨</span> 好處: {{ dish.營養健康好處 }}
                                     </div>
-                                    <!-- 備註緊隨在好處下方（或單獨存在時也顯示） -->
+                                    <!-- 備註緊隨在好處下方 -->
                                     <div v-if="dish.備註" class="text-xs text-gray-500 italic flex items-center gap-1">
                                         <span>💡</span> 備註: {{ dish.備註 }}
                                     </div>
                                 </div>
 
-                                <!-- 右半部：精簡版面，僅保留放大編輯按鈕 -->
+                                <!-- 右半部：放大編輯按鈕 -->
                                 <div class="flex items-center gap-3 shrink-0">
-                                    <!-- 放大編輯按鈕 -->
                                     <button @click="openEditModal(dish)" 
                                             class="w-8 h-8 rounded-full bg-brand-accent/10 hover:bg-brand-accent text-brand-accent hover:text-white transition flex items-center justify-center" 
                                             title="編輯/檢視">
@@ -353,7 +359,7 @@
                         <input type="text" v-model="editingDish.備註" placeholder="例：爆香蒜頭，大火快炒" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
                     </div>
 
-                    <!-- 按鈕群：刪除、取消與儲存 -->
+                    <!-- 按鈕群 -->
                     <div class="flex flex-col gap-2 pt-2">
                         <div class="flex gap-2">
                             <button type="button" @click="closeModal" class="flex-1 bg-gray-100 text-gray-600 py-2.5 rounded-xl text-xs font-semibold hover:bg-gray-200 transition">
@@ -416,6 +422,19 @@
                     apiConfigured.value = true;
                     fetchData();
                 });
+
+                // =================【新增：根據分類回傳對應的 Icon】=================
+                const getCategoryIcon = (category) => {
+                    const iconMap = {
+                        '肉類': '🥩',
+                        '蔬菜': '🥦',
+                        '魚/海鮮': '🐟',
+                        '湯品': '🥣',
+                        '其它(如豆腐類)': '🍳',
+                        '特別特色菜': '🍜'
+                    };
+                    return iconMap[category] || '🍽️';
+                };
 
                 const fetchData = async () => {
                     if (!apiUrl.value) return;
@@ -522,7 +541,7 @@
                     
                     const eatenRecently = new Set();
                     recentHistory.value.forEach(record => {
-                        const recordDate = new Date(record.官方日期 || record.日期);
+                        const recordDate = new Date(record.官方日期 || record.記錄日期 || record.日期);
                         if (recordDate >= oneWeekAgo) {
                             if (record.菜式1) eatenRecently.add(record.菜式1);
                             if (record.菜式2) eatenRecently.add(record.菜式2);
@@ -720,6 +739,7 @@
                     applySuggestionToRecord,
                     submitNewDish,
                     submitRecord,
+                    getCategoryIcon,
                     
                     showModal,
                     editingDish,
