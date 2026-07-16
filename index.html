@@ -163,7 +163,7 @@
                 <form @submit.prevent="submitRecord" class="space-y-4">
                     <div>
                         <label class="block text-xs font-semibold text-gray-500 mb-1">用餐日期</label>
-                        <input type="date" v-model="recordForm.日記" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
+                        <input type="date" v-model="recordForm.日期" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:ring-1 focus:ring-brand-accent">
                     </div>
 
                     <div>
@@ -502,7 +502,6 @@
                             data: { ...editingDish.value } 
                         };
                         
-                        // 使用 no-cors 或正常的 POST 視後端 GAS 設定而定，一般使用標準的 fetch POST 傳送 text 避免 CORS 預檢失敗
                         const response = await fetch(apiUrl.value, { 
                             method: 'POST', 
                             mode: 'cors',
@@ -694,7 +693,7 @@
                             菜式1好處: itemA.營養健康好處 || '',
                             菜式1備註: itemA.備註 || '',
                             菜式2: itemB.菜名,   
-                            菜式2好處: itemB.營養健康好0.5 || '',
+                            菜式2好處: itemB.營養健康好處 || '',
                             菜式2備註: itemB.備註 || ''
                         };
                     }
@@ -787,7 +786,7 @@
                     submitRecord,
                     getCategoryIcon,
                     
-                    showModal,
+                    showModal, // 修正：將變數回傳給模板使用
                     editingDish,
                     originalDishName,
                     openEditModal,
