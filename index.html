@@ -4,46 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>老婆的溫馨料理助手</title>
-    <!-- Tailwind CSS & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background-color: #fdf6f0; color: #4a3b32; }
-        .custom-scroll::-webkit-scrollbar { width: 5px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #d48c70; border-radius: 4px; }
     </style>
 </head>
-<body class="min-h-screen pb-12">
+<body class="min-h-screen">
     <div id="app" class="max-w-md mx-auto px-4 pt-6">
-        <!-- Tab Menu -->
-        <div class="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 mb-6">
-            <button @click="currentTab = 'suggest'" :class="currentTab === 'suggest' ? 'bg-brand-accent text-white' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-sm transition">今日提案</button>
-            <button @click="currentTab = 'record'" :class="currentTab === 'record' ? 'bg-brand-accent text-white' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-sm transition">紀錄晚餐</button>
-            <button @click="currentTab = 'menu'" :class="currentTab === 'menu' ? 'bg-brand-accent text-white' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-sm transition">菜單庫</button>
+        <!-- 導航列 -->
+        <div class="flex bg-white p-1 rounded-xl shadow-sm border mb-6">
+            <button @click="currentTab = 'suggest'" :class="currentTab === 'suggest' ? 'bg-[#d48c70] text-white' : ''" class="flex-1 py-2 rounded-lg text-sm">提案</button>
+            <button @click="currentTab = 'record'" :class="currentTab === 'record' ? 'bg-[#d48c70] text-white' : ''" class="flex-1 py-2 rounded-lg text-sm">紀錄</button>
+            <button @click="currentTab = 'menu'" :class="currentTab === 'menu' ? 'bg-[#d48c70] text-white' : ''" class="flex-1 py-2 rounded-lg text-sm">庫</button>
         </div>
 
+        <!-- 狀態檢查 -->
+        <div v-if="loading" class="text-center py-10"><i class="fa fa-spinner animate-spin text-2xl"></i></div>
+        
         <!-- 內容區 -->
-        <div v-if="currentTab === 'menu'" class="space-y-4">
-            <!-- 分類選擇器 -->
-            <div class="flex gap-1 overflow-x-auto pb-2">
-                <button v-for="cat in categories" :key="cat.value" 
-                        @click="selectedCategory = cat.value"
-                        :class="selectedCategory === cat.value ? 'bg-[#d48c70] text-white' : 'bg-gray-200'"
-                        class="px-3 py-1 rounded-full text-xs whitespace-nowrap">
-                    {{ cat.label }}
-                </button>
+        <div v-else>
+            <div v-if="currentTab === 'menu'">
+                <div class="flex gap-2 overflow-x-auto pb-4">
+                    <button v-for="cat in categories" :key="cat.value" 
+                            @click="selectedCategory = cat.value"
+                            class="px-3 py-1 rounded-full text-xs bg-white border">{{ cat.label }}</button>
+                </div>
+                <div v-for="dish in filteredDishes" :key="dish.菜名" class="bg-white p-4 mb-2 rounded-lg shadow-sm border">
+                    <h3 class="font-bold">{{ dish.菜名 }}</h3>
+                    <p class="text-xs text-gray-500">{{ dish.分類 }}</p>
+                </div>
             </div>
-            
-            <!-- 菜單列表 -->
-            <ul class="space-y-2">
-                <li v-for="dish in filteredDishes" :key="dish.菜名" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold">{{ dish.菜名 }}</span>
-                        <span class="text-[10px] bg-gray-100 px-2 py-1 rounded">{{ dish.分類 }}</span>
-                    </div>
-                </li>
-            </ul>
         </div>
     </div>
 
@@ -52,38 +44,42 @@
         createApp({
             setup() {
                 const currentTab = ref('menu');
+                const loading = ref(true);
+                const dishes = ref([]);
                 const selectedCategory = ref('全部');
-                const submitting = ref(false);
-                const apiUrl = ref('https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec');
+                const apiUrl = 'https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec';
                 
-                // 統一分類值，確保此處與 HTML 的 value 以及資料庫完全一致
                 const categories = [
                     { label: '全部', value: '全部' },
                     { label: '肉類', value: '肉類' },
                     { label: '蔬菜', value: '蔬菜' },
                     { label: '魚/海鮮', value: '魚/海鮮' },
-                    { label: '湯品', value: '湯品' },
                     { label: '其它(豆腐類)', value: '其它(如豆腐類)' },
                     { label: '特色菜', value: '特別特色菜' }
                 ];
-
-                const dishes = ref([]);
 
                 const filteredDishes = computed(() => {
                     return selectedCategory.value === '全部' ? dishes.value : dishes.value.filter(d => d.分類 === selectedCategory.value);
                 });
 
+                // 使用 try-catch 確保即便 API 呼叫失敗，前端也不會崩潰
                 const fetchData = async () => {
                     try {
-                        const res = await fetch(`${apiUrl.value}?sheet=菜單庫`);
-                        const result = await res.json();
-                        if (result.status === 'success') dishes.value = result.data;
-                    } catch (e) { console.error(e); }
+                        const response = await fetch(`${apiUrl}?sheet=菜單庫`);
+                        if (!response.ok) throw new Error('Network error');
+                        const result = await response.json();
+                        dishes.value = result.data || [];
+                    } catch (e) {
+                        console.error("載入資料失敗:", e);
+                        alert("無法連結至資料庫，請檢查 GAS 部屬設定");
+                    } finally {
+                        loading.value = false;
+                    }
                 };
 
                 onMounted(fetchData);
 
-                return { currentTab, selectedCategory, categories, filteredDishes, submitting };
+                return { currentTab, loading, dishes, selectedCategory, categories, filteredDishes };
             }
         }).mount('#app');
     </script>
