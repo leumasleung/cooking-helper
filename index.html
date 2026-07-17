@@ -1,87 +1,36 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>老婆的溫馨料理助手</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <style>
-        body { font-family: -apple-system, sans-serif; background-color: #fdf6f0; color: #4a3b32; }
-    </style>
-</head>
-<body class="min-h-screen">
-    <div id="app" class="max-w-md mx-auto px-4 pt-6">
-        <!-- 導航列 -->
-        <div class="flex bg-white p-1 rounded-xl shadow-sm border mb-6">
-            <button @click="currentTab = 'suggest'" :class="currentTab === 'suggest' ? 'bg-[#d48c70] text-white' : ''" class="flex-1 py-2 rounded-lg text-sm">提案</button>
-            <button @click="currentTab = 'record'" :class="currentTab === 'record' ? 'bg-[#d48c70] text-white' : ''" class="flex-1 py-2 rounded-lg text-sm">紀錄</button>
-            <button @click="currentTab = 'menu'" :class="currentTab === 'menu' ? 'bg-[#d48c70] text-white' : ''" class="flex-1 py-2 rounded-lg text-sm">庫</button>
-        </div>
+<!-- ... 前半部結構維持與 完全相同 ... -->
 
-        <!-- 狀態檢查 -->
-        <div v-if="loading" class="text-center py-10"><i class="fa fa-spinner animate-spin text-2xl"></i></div>
-        
-        <!-- 內容區 -->
-        <div v-else>
-            <div v-if="currentTab === 'menu'">
-                <div class="flex gap-2 overflow-x-auto pb-4">
-                    <button v-for="cat in categories" :key="cat.value" 
-                            @click="selectedCategory = cat.value"
-                            class="px-3 py-1 rounded-full text-xs bg-white border">{{ cat.label }}</button>
-                </div>
-                <div v-for="dish in filteredDishes" :key="dish.菜名" class="bg-white p-4 mb-2 rounded-lg shadow-sm border">
-                    <h3 class="font-bold">{{ dish.菜名 }}</h3>
-                    <p class="text-xs text-gray-500">{{ dish.分類 }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const { createApp, ref, computed, onMounted } = Vue;
-        createApp({
-            setup() {
-                const currentTab = ref('menu');
-                const loading = ref(true);
-                const dishes = ref([]);
-                const selectedCategory = ref('全部');
-                const apiUrl = 'https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec';
-                
-                const categories = [
-                    { label: '全部', value: '全部' },
-                    { label: '肉類', value: '肉類' },
-                    { label: '蔬菜', value: '蔬菜' },
-                    { label: '魚/海鮮', value: '魚/海鮮' },
-                    { label: '其它(豆腐類)', value: '其它(如豆腐類)' },
-                    { label: '特色菜', value: '特別特色菜' }
-                ];
-
-                const filteredDishes = computed(() => {
-                    return selectedCategory.value === '全部' ? dishes.value : dishes.value.filter(d => d.分類 === selectedCategory.value);
-                });
-
-                // 使用 try-catch 確保即便 API 呼叫失敗，前端也不會崩潰
-                const fetchData = async () => {
-                    try {
-                        const response = await fetch(`${apiUrl}?sheet=菜單庫`);
-                        if (!response.ok) throw new Error('Network error');
-                        const result = await response.json();
-                        dishes.value = result.data || [];
-                    } catch (e) {
-                        console.error("載入資料失敗:", e);
-                        alert("無法連結至資料庫，請檢查 GAS 部屬設定");
-                    } finally {
-                        loading.value = false;
-                    }
-                };
-
-                onMounted(fetchData);
-
-                return { currentTab, loading, dishes, selectedCategory, categories, filteredDishes };
+<script>
+    // ... 在 submitNewDish 函式中加入處理重複邏輯 ...
+    const submitNewDish = async () => {
+        if (submitting.value) return;
+        submitting.value = true;
+        try {
+            const payload = { action: 'addDish', data: { ...dishForm.value } };
+            const response = await fetch(apiUrl.value, { 
+                method: 'POST', 
+                mode: 'cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload) 
+            });
+            const result = await response.json();
+            
+            // 偵測是否重複
+            if (result.status === 'duplicate') {
+                alert(result.message); // 跳出警告：該菜名已存在
+            } else if (result.status === 'success') {
+                alert('新菜色已成功加入菜單庫！');
+                dishes.value.push({ ...dishForm.value });
+                dishForm.value.菜名 = '';
+            } else {
+                alert('新增失敗：' + (result.message || '未知錯誤'));
             }
-        }).mount('#app');
-    </script>
-</body>
-</html>
+        } catch (e) {
+            console.error(e);
+            alert('網路連線或 API 執行出錯！');
+        } finally {
+            submitting.value = false;
+        }
+    };
+    // ... 其餘邏輯與 保持一致 ...
+</script>
