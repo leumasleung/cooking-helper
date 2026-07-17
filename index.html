@@ -331,10 +331,12 @@
         </div>
 
         <!-- =================【編輯與檢視 菜色彈窗 Modal】================= -->
+        <!-- 修正點: 新增 fixed 遮罩與防止點擊事件穿透 -->
         <div v-if="showModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-xs">
-            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative overflow-y-auto max-h-[90vh] custom-scroll">
+            <!-- 修正點: 設定最大高度限制 max-h-[90vh] 且允許垂直方向自適應滾動，避免手機上長內容把按鈕擠下螢幕 -->
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative overflow-y-auto max-h-[90vh] custom-scroll animate-in fade-in zoom-in-95 duration-150">
                 
-                <!-- 關閉按鈕 -->
+                <!-- 關閉按鈕，加大觸摸熱區 -->
                 <button @click="closeModal" type="button" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
@@ -395,7 +397,7 @@
                             </button>
                         </div>
                         
-                        <!-- 刪除按鈕 -->
+                        <!-- 刪除按鈕 (已修正手機觸控反應與事件穿透問題) -->
                         <button type="button" 
                                 @click.prevent="confirmDelete(editingDish.菜名)" 
                                 :disabled="submitting" 
@@ -421,8 +423,7 @@
             setup() {
                 const currentTab = ref('suggest');
                 
-                // 更換為你的最新 Google Apps Script Web App API 網址
-                const apiUrl = ref('https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec');
+                const apiUrl = ref('https://script.google.com/macros/library/d/1zrgEGR4CHlLT_39KYPL06OaQ5i2IlQ00nYzoZMuWEfaKV30JQOSrzGr6/11');
                 const apiConfigured = ref(false);
                 const loading = ref(false);
                 const submitting = ref(false);
@@ -469,14 +470,8 @@
                     if (!apiUrl.value) return;
                     loading.value = true;
                     try {
-                        // 使用正確的 Action 指令向後端請求，與 GS 防禦版完全對接
                         const [resDishes, resHistory] = await Promise.all([
-                            fetch(apiUrl.value, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                                body: JSON.stringify({ action: 'getDishes' })
-                            }),
-                            // 讀取歷史紀錄 (此處保留原先直接 Get 參數讀取，或使用 POST)
+                            fetch(`${apiUrl.value}?sheet=菜單庫`),
                             fetch(`${apiUrl.value}?sheet=每日晚餐紀錄`)
                         ]);
                         
@@ -485,11 +480,8 @@
                         
                         if (dataDishes.status === 'success') dishes.value = dataDishes.data;
                         if (dataHistory.status === 'success') recentHistory.value = dataHistory.data;
-                    } catch (e) { 
-                        console.error(e); 
-                    } finally { 
-                        loading.value = false; 
-                    }
+                    } catch (e) { console.error(e); }
+                    finally { loading.value = false; }
                 };
 
                 const filteredDishes = computed(() => {
@@ -524,7 +516,9 @@
                         const response = await fetch(apiUrl.value, { 
                             method: 'POST', 
                             mode: 'cors',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            headers: {
+                                'Content-Type': 'text/plain;charset=utf-8'
+                            },
                             body: JSON.stringify(payload) 
                         });
                         
@@ -537,7 +531,7 @@
                             }
                             closeModal();
                         } else {
-                            alert('修改失敗：' + (result.message || '請確認後端設定。'));
+                            alert('修改失敗：' + (result.message || '請確認後端 Google 試算表指令正確。'));
                         }
                     } catch (e) {
                         console.error(e);
@@ -556,27 +550,29 @@
                     try {
                         const payload = { 
                             action: 'deleteDish', 
-                            data: { 菜名: name } 
+                            dishName: name 
                         };
                         
                         const response = await fetch(apiUrl.value, { 
                             method: 'POST', 
                             mode: 'cors',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            headers: {
+                                'Content-Type': 'text/plain;charset=utf-8'
+                            },
                             body: JSON.stringify(payload) 
                         });
                         
                         const result = await response.json();
                         if (result.status === 'success') {
-                            alert(result.message || '已成功刪除！');
+                            alert('已成功刪除！');
                             dishes.value = dishes.value.filter(d => d.菜名 !== name);
                             closeModal();
                         } else {
-                            alert('刪除失敗：' + (result.message || '請確認後端 GS 設定。'));
+                            alert('刪除失敗：' + (result.message || '請確認後端 GAS 代碼是否有對接「deleteDish」指令。'));
                         }
                     } catch (e) {
                         console.error(e);
-                        alert('刪除失敗，請檢查網路連線或 Apps Script 後端。');
+                        alert('刪除失敗，請檢查網路連線或 Google Apps Script 後端設定。');
                     } finally {
                         submitting.value = false;
                     }
@@ -732,12 +728,8 @@
                             body: JSON.stringify(payload) 
                         });
                         const result = await response.json();
-                        
-                        // 處理「防禦去重」回傳結果
-                        if (result.status === 'duplicate') {
-                            alert(result.message); // 跳出同名菜色警告
-                        } else if (result.status === 'success') {
-                            alert(result.message || '新菜色已成功加入菜單庫！');
+                        if (result.status === 'success') {
+                            alert('新菜色已成功加入菜單庫！');
                             dishes.value.push({ ...dishForm.value });
                             dishForm.value.菜名 = '';
                             dishForm.value.備註 = '';
