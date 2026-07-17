@@ -4,129 +4,86 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>老婆的溫馨料理助手</title>
-    
-    <!-- =================【自訂 Web Icon 設定】================= -->
-    <link class="rounded-full" rel="apple-touch-icon" href="./app-icon.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="./app-icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="./app-icon.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="./app-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="./app-icon.png">
-    <link class="rounded-full" rel="icon" type="image/png" sizes="512x512" href="./app-icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="料理助手">
-    <!-- ======================================================== -->
-
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS & FontAwesome -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            light: '#fdf6f0',
-                            accent: '#d48c70',
-                            sage: '#8ba88f',
-                            dark: '#4a3b32',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fdf6f0; color: #4a3b32; overscroll-behavior-y: none; -webkit-font-smoothing: antialiased; }
-        .smooth-scroll { overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: thin; }
+        body { font-family: -apple-system, sans-serif; background-color: #fdf6f0; color: #4a3b32; }
         .custom-scroll::-webkit-scrollbar { width: 5px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #d48c70; border-radius: 4px; }
-        button, select, input { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
 <body class="min-h-screen pb-12">
     <div id="app" class="max-w-md mx-auto px-4 pt-6">
-        <header class="text-center mb-6">
-            <div class="inline-block p-1 bg-white rounded-full shadow-md mb-2 border border-brand-light overflow-hidden">
-                <img src="./app-icon.png" alt="Logo" class="w-16 h-16 object-cover rounded-full">
-            </div>
-            <h1 class="text-2xl font-bold text-brand-dark mt-1">老婆的溫馨料理助手</h1>
-            <p class="text-xs text-gray-500 mt-1">智慧雙菜搭配・星星健康紀錄</p>
-        </header>
-
-        <div v-if="!apiConfigured" class="text-center py-12">
-            <i class="fa-solid fa-spinner animate-spin text-brand-accent text-3xl"></i>
+        <!-- Tab Menu -->
+        <div class="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <button @click="currentTab = 'suggest'" :class="currentTab === 'suggest' ? 'bg-brand-accent text-white' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-sm transition">今日提案</button>
+            <button @click="currentTab = 'record'" :class="currentTab === 'record' ? 'bg-brand-accent text-white' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-sm transition">紀錄晚餐</button>
+            <button @click="currentTab = 'menu'" :class="currentTab === 'menu' ? 'bg-brand-accent text-white' : 'text-gray-500'" class="flex-1 py-2 rounded-lg text-sm transition">菜單庫</button>
         </div>
 
-        <div v-else>
-            <!-- Tabs -->
-            <div class="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 mb-6">
-                <button @click="currentTab = 'suggest'" :class="currentTab === 'suggest' ? 'bg-brand-accent text-white shadow-sm' : 'text-gray-500'" class="flex-1 py-2.5 rounded-lg text-sm font-medium transition">今日提案</button>
-                <button @click="currentTab = 'record'" :class="currentTab === 'record' ? 'bg-brand-accent text-white shadow-sm' : 'text-gray-500'" class="flex-1 py-2.5 rounded-lg text-sm font-medium transition">紀錄晚餐</button>
-                <button @click="currentTab = 'menu'" :class="currentTab === 'menu' ? 'bg-brand-accent text-white shadow-sm' : 'text-gray-500'" class="flex-1 py-2.5 rounded-lg text-sm font-medium transition">菜單庫</button>
+        <!-- 內容區 -->
+        <div v-if="currentTab === 'menu'" class="space-y-4">
+            <!-- 分類選擇器 -->
+            <div class="flex gap-1 overflow-x-auto pb-2">
+                <button v-for="cat in categories" :key="cat.value" 
+                        @click="selectedCategory = cat.value"
+                        :class="selectedCategory === cat.value ? 'bg-[#d48c70] text-white' : 'bg-gray-200'"
+                        class="px-3 py-1 rounded-full text-xs whitespace-nowrap">
+                    {{ cat.label }}
+                </button>
             </div>
-
-            <!-- 省略部分 UI 結構 (與原檔案相同)，直接對應下方 Script 邏輯 -->
-            <!-- 確保所有按鈕綁定 :disabled="submitting" -->
+            
+            <!-- 菜單列表 -->
+            <ul class="space-y-2">
+                <li v-for="dish in filteredDishes" :key="dish.菜名" class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold">{{ dish.菜名 }}</span>
+                        <span class="text-[10px] bg-gray-100 px-2 py-1 rounded">{{ dish.分類 }}</span>
+                    </div>
+                </li>
+            </ul>
         </div>
     </div>
 
     <script>
         const { createApp, ref, computed, onMounted } = Vue;
-
         createApp({
             setup() {
-                const currentTab = ref('suggest');
-                // 更新後的 API 連結
+                const currentTab = ref('menu');
+                const selectedCategory = ref('全部');
+                const submitting = ref(false);
                 const apiUrl = ref('https://script.google.com/macros/s/AKfycbxM3wvkhTYPzLlVdbdbZMNcdV2uzHUCnZGgBOMFh66VKrlopiOwTkvv6EOy0Uy29M6P/exec');
-                const submitting = ref(false); // 防重複提交開關
-                const dishes = ref([]);
                 
-                // ... (原有的資料定義) ...
+                // 統一分類值，確保此處與 HTML 的 value 以及資料庫完全一致
+                const categories = [
+                    { label: '全部', value: '全部' },
+                    { label: '肉類', value: '肉類' },
+                    { label: '蔬菜', value: '蔬菜' },
+                    { label: '魚/海鮮', value: '魚/海鮮' },
+                    { label: '湯品', value: '湯品' },
+                    { label: '其它(豆腐類)', value: '其它(如豆腐類)' },
+                    { label: '特色菜', value: '特別特色菜' }
+                ];
 
-                const submitNewDish = async () => {
-                    if (submitting.value) return; // 防重複機制
-                    submitting.value = true;
+                const dishes = ref([]);
+
+                const filteredDishes = computed(() => {
+                    return selectedCategory.value === '全部' ? dishes.value : dishes.value.filter(d => d.分類 === selectedCategory.value);
+                });
+
+                const fetchData = async () => {
                     try {
-                        const response = await fetch(apiUrl.value, { 
-                            method: 'POST', 
-                            body: JSON.stringify({ action: 'addDish', data: dishForm.value }) 
-                        });
-                        const result = await response.json();
-                        if (result.status === 'success') {
-                            alert('新增成功！');
-                            dishes.value.push({ ...dishForm.value });
-                        } else {
-                            alert('新增失敗：' + (result.message || '請檢查'));
-                        }
-                    } catch (e) { alert('系統連線錯誤'); } 
-                    finally { submitting.value = false; }
+                        const res = await fetch(`${apiUrl.value}?sheet=菜單庫`);
+                        const result = await res.json();
+                        if (result.status === 'success') dishes.value = result.data;
+                    } catch (e) { console.error(e); }
                 };
 
-                const submitRecord = async () => {
-                    if (submitting.value) return;
-                    submitting.value = true;
-                    try {
-                        await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify({ action: 'addRecord', data: recordForm.value }) });
-                        alert('紀錄成功！');
-                    } finally { submitting.value = false; }
-                };
+                onMounted(fetchData);
 
-                const confirmDelete = async (name) => {
-                    if (submitting.value) return;
-                    if (!confirm(`確認刪除 ${name}？`)) return;
-                    submitting.value = true;
-                    try {
-                        await fetch(apiUrl.value, { method: 'POST', body: JSON.stringify({ action: 'deleteDish', name: name }) });
-                        dishes.value = dishes.value.filter(d => d.菜名 !== name);
-                    } finally { submitting.value = false; }
-                };
-
-                return { currentTab, submitting, submitNewDish, submitRecord, confirmDelete /* ... 其餘變數 */ };
+                return { currentTab, selectedCategory, categories, filteredDishes, submitting };
             }
         }).mount('#app');
     </script>
